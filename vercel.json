@@ -1,3 +1,14 @@
 {
-    "version": 2
+    "version": 2,
+    "functions": {
+        "api/chat.js": {
+            "runtime": "nodejs18.x"
+        },
+        "api/health.js": {
+            "runtime": "nodejs18.x"
+        },
+        "api/test-generator.js": {
+            "runtime": "nodejs18.x"
+        }
+    }
 }
