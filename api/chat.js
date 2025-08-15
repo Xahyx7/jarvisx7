@@ -1,52 +1,16 @@
-// AI Provider configurations using environment variables
-const API_PROVIDERS = [
-    {
-        name: "Groq-Ultra-Fast",
-        url: "https://api.groq.com/openai/v1/chat/completions",
-        key: process.env.GROQ_API_KEY,
-        model: "mixtral-8x7b-32768",
-        type: "openai-compatible",
-        priority: 1,
-        maxTokens: 2000
-    },
-    {
-        name: "DeepSeek-Intelligence",
-        url: "https://api.deepseek.com/v1/chat/completions", 
-        key: process.env.DEEPSEEK_API_KEY,
-        model: "deepseek-chat",
-        type: "openai-compatible",
-        priority: 2,
-        maxTokens: 2000
-    },
-    {
-        name: "Together-AI-Llama",
-        url: "https://api.together.xyz/v1/chat/completions",
-        key: process.env.TOGETHER_API_KEY,
-        model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-        type: "openai-compatible", 
-        priority: 3,
-        maxTokens: 2000
-    },
-    {
-        name: "HuggingFace-Backup",
-        url: "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large",
-        key: process.env.HUGGINGFACE_API_KEY,
-        type: "huggingface",
-        priority: 4
-    }
-];
-
 export default async function handler(req, res) {
-    // CORS headers
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
+    // Only accept POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -68,9 +32,47 @@ export default async function handler(req, res) {
             });
         }
 
-        console.log(`🤖 Processing: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
+        console.log(`🤖 Processing message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
 
-        // Get available providers
+        // AI providers configuration
+        const API_PROVIDERS = [
+            {
+                name: "Groq-Ultra-Fast",
+                url: "https://api.groq.com/openai/v1/chat/completions",
+                key: process.env.GROQ_API_KEY,
+                model: "mixtral-8x7b-32768",
+                type: "openai-compatible",
+                priority: 1,
+                maxTokens: 2000
+            },
+            {
+                name: "DeepSeek-Intelligence",
+                url: "https://api.deepseek.com/v1/chat/completions", 
+                key: process.env.DEEPSEEK_API_KEY,
+                model: "deepseek-chat",
+                type: "openai-compatible",
+                priority: 2,
+                maxTokens: 2000
+            },
+            {
+                name: "Together-AI-Llama",
+                url: "https://api.together.xyz/v1/chat/completions",
+                key: process.env.TOGETHER_API_KEY,
+                model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                type: "openai-compatible", 
+                priority: 3,
+                maxTokens: 2000
+            },
+            {
+                name: "HuggingFace-Backup",
+                url: "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large",
+                key: process.env.HUGGINGFACE_API_KEY,
+                type: "huggingface",
+                priority: 4
+            }
+        ];
+
+        // Filter and sort providers by priority
         const sortedProviders = API_PROVIDERS
             .filter(p => p.key && p.key.length > 10)
             .sort((a, b) => a.priority - b.priority);
@@ -125,7 +127,7 @@ async function callAIProvider(provider, message, history) {
 Guidelines:
 - Provide helpful, accurate, and detailed responses
 - Be engaging, supportive, and intelligent  
-- Use clear formatting with **bold** and *italic* when helpful
+- Use clear formatting with bold and italic when helpful
 - No topic restrictions - answer any question asked
 - Include examples and real-world applications when relevant
 - Be encouraging and positive in your responses
@@ -213,7 +215,7 @@ async function callHuggingFace(provider, message) {
 
     const data = await response.json();
     
-    if (Array.isArray(data) && data[0] && data[0].generated_text) {
+    if (Array.isArray(data) && data[0] && data.generated_text) {
         return data.generated_text;
     } else if (data.generated_text) {
         return data.generated_text;
