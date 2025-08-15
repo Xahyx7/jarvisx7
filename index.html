@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS - Arc Reactor Initialization</title>
+    <link rel="stylesheet" href="intro.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="reactor-container">
+        <div class="arc-reactor">
+            <!-- Outer Ring -->
+            <div class="outer-ring">
+                <div class="ring-segment" style="--rotation: 0deg;"></div>
+                <div class="ring-segment" style="--rotation: 45deg;"></div>
+                <div class="ring-segment" style="--rotation: 90deg;"></div>
+                <div class="ring-segment" style="--rotation: 135deg;"></div>
+                <div class="ring-segment" style="--rotation: 180deg;"></div>
+                <div class="ring-segment" style="--rotation: 225deg;"></div>
+                <div class="ring-segment" style="--rotation: 270deg;"></div>
+                <div class="ring-segment" style="--rotation: 315deg;"></div>
+            </div>
+            
+            <!-- Middle Ring -->
+            <div class="middle-ring">
+                <div class="middle-segment" style="--rotation: 22.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 67.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 112.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 157.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 202.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 247.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 292.5deg;"></div>
+                <div class="middle-segment" style="--rotation: 337.5deg;"></div>
+            </div>
+            
+            <!-- Core Circle -->
+            <div class="reactor-core">
+                <div class="core-inner"></div>
+            </div>
+            
+            <!-- Energy Particles -->
+            <div class="particles">
+                <div class="particle" style="--delay: 0s; --angle: 0deg;"></div>
+                <div class="particle" style="--delay: 0.2s; --angle: 60deg;"></div>
+                <div class="particle" style="--delay: 0.4s; --angle: 120deg;"></div>
+                <div class="particle" style="--delay: 0.6s; --angle: 180deg;"></div>
+                <div class="particle" style="--delay: 0.8s; --angle: 240deg;"></div>
+                <div class="particle" style="--delay: 1s; --angle: 300deg;"></div>
+            </div>
+        </div>
+        
+        <!-- Status -->
+        <div class="status-container">
+            <div class="status-text" id="statusText">Initializing Arc Reactor...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="intro.js"></script>
+</body>
+</html>
