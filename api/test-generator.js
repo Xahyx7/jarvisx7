@@ -23,13 +23,11 @@ module.exports = async (req, res) => {
 
         console.log(`📝 Test generation request: "${message.substring(0, 100)}..."`);
 
-        // Only use Groq for test generation
         const groqKey = process.env.GROQ_API_KEY;
         
         if (!groqKey) {
             res.status(503).json({
-                error: 'API key missing',
-                response: 'Test generation is available but API key is not configured.'
+                error: 'API key missing'
             });
             return;
         }
@@ -39,7 +37,7 @@ module.exports = async (req, res) => {
 INSTRUCTIONS:
 1. **For any test generation request, create:**
    - Multiple choice questions (4 options each, mark correct answer)
-   - Short answer questions
+   - Short answer questions  
    - Long answer/essay questions when appropriate
    - Difficulty levels: Easy, Medium, Hard
 
@@ -64,6 +62,7 @@ INSTRUCTIONS:
 
 Generate a comprehensive test based on this request: "${message}"`;
 
+        // ACTUALLY CALL GROQ FOR TEST GENERATION
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -82,30 +81,28 @@ Generate a comprehensive test based on this request: "${message}"`;
             })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const testContent = data.choices[0].message.content;
-            
-            console.log(`✅ Test generated successfully`);
-            res.status(200).json({
-                response: testContent,
-                provider: 'Groq-TestGen',
-                type: 'test-generation',
-                timestamp: new Date().toISOString()
-            });
-        } else {
-            const errorData = await response.json().catch(() => ({}));
-            res.status(503).json({
-                error: 'Test generation failed',
-                response: 'JARVIS test generation is working! Here\'s a sample: **Question 1:** What is the main topic you want to study? **A)** Math **B)** Science **C)** English **D)** History'
-            });
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Groq test generation error:', errorText);
+            throw new Error(`Groq API error: ${response.status}`);
         }
+
+        const data = await response.json();
+        const testContent = data.choices[0].message.content;
+        
+        console.log(`✅ Test generated successfully`);
+        res.status(200).json({
+            response: testContent,
+            provider: 'Groq-TestGen',
+            type: 'test-generation',
+            timestamp: new Date().toISOString()
+        });
 
     } catch (error) {
         console.error('Test generation error:', error);
         res.status(500).json({
-            error: 'Server error',
-            response: 'JARVIS test generation system is operational! Your presentation will demonstrate amazing AI capabilities.'
+            error: 'Test generation failed',
+            response: `Error generating test: ${error.message}`
         });
     }
 };
