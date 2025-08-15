@@ -57,22 +57,50 @@ module.exports = async (req, res) => {
 
         if (!response.ok) {
             const err = await response.text().catch(() => 'Unknown error');
+            console.log('Groq API error:', response.status, err);
             return res.status(response.status).json({ 
                 error: 'Groq API error', 
-                detail: err 
+                detail: err,
+                status: response.status
             });
         }
 
         const data = await response.json();
-        const ai = data.choices?.[0]?.message?.content;
+        console.log('Groq response data:', JSON.stringify(data, null, 2));
 
-        if (!ai || !ai.trim()) {
+        // More flexible AI response extraction
+        let ai = null;
+        
+        if (data.choices && data.choices[0]) {
+            if (data.choices.message && data.choices.message.content) {
+                ai = data.choices.message.content;
+            } else if (data.choices.text) {
+                ai = data.choices.text;
+            }
+        }
+
+        console.log('Extracted AI response:', ai);
+
+        if (!ai) {
+            console.log('No AI content found in response');
             return res.status(502).json({ 
-                error: 'Empty AI reply', 
-                detail: 'No text returned' 
+                error: 'No AI response found',
+                detail: 'Groq returned data but no content was extracted',
+                debug_data: data
             });
         }
 
+        if (ai.trim().length === 0) {
+            console.log('AI response is empty after trimming');
+            return res.status(502).json({ 
+                error: 'Empty AI response',
+                detail: 'AI returned empty content',
+                raw_response: ai
+            });
+        }
+
+        console.log(`✅ Success! AI response length: ${ai.length}`);
+        
         res.status(200).json({
             response: ai,
             provider: 'Groq-Ultra-Fast',
@@ -85,7 +113,8 @@ module.exports = async (req, res) => {
         console.error('Server error:', error);
         res.status(500).json({
             error: 'Internal server error',
-            detail: error.message
+            detail: error.message,
+            stack: error.stack
         });
     }
 };
