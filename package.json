@@ -1,7 +1,7 @@
 {
     "name": "jarvis-ai-ultimate",
-    "version": "6.0.0",
-    "description": "JARVIS AI Ultimate - Single API (Groq) Optimized",
+    "version": "6.1.0",
+    "description": "JARVIS AI Ultimate - Real AI Responses Only",
     "main": "index.html",
     "scripts": {
         "dev": "vercel dev",
@@ -10,18 +10,13 @@
     "keywords": [
         "jarvis",
         "ai",
-        "assistant",
         "groq",
-        "iron-man",
-        "arc-reactor",
-        "educational",
-        "vercel"
+        "real-ai",
+        "no-fake-responses"
     ],
-    "author": "JARVIS AI Developer",
+    "author": "JARVIS Developer",
     "license": "MIT",
     "engines": {
         "node": ">=18.0.0"
-    },
-    "dependencies": {},
-    "devDependencies": {}
+    }
 }
