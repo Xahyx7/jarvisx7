@@ -17,52 +17,49 @@ module.exports = async (req, res) => {
         const { message, history } = req.body;
 
         if (!message) {
-            res.status(400).json({ error: 'Message is required' });
+            res.status(400).json({ error: 'Message required' });
             return;
         }
 
-        console.log(`📝 Test generation request: "${message.substring(0, 100)}..."`);
+        console.log(`Test generation: ${message.substring(0, 100)}...`);
 
         const groqKey = process.env.GROQ_API_KEY;
         
         if (!groqKey) {
-            res.status(503).json({
-                error: 'API key missing'
-            });
+            res.status(503).json({ error: 'Groq API key not configured' });
             return;
         }
 
         const testPrompt = `You are JARVIS's test generation system. Create comprehensive, well-structured tests based on user requests.
 
 INSTRUCTIONS:
-1. **For any test generation request, create:**
+1. For any test generation request, create:
    - Multiple choice questions (4 options each, mark correct answer)
-   - Short answer questions  
+   - Short answer questions
    - Long answer/essay questions when appropriate
    - Difficulty levels: Easy, Medium, Hard
 
-2. **For CBSE subjects (Classes 6-12):**
+2. For CBSE subjects (Classes 6-12):
    - Follow NCERT curriculum guidelines
    - Include previous year question patterns
    - Provide marking schemes
    - Add reference to specific chapters/topics
 
-3. **Format your response with:**
+3. Format your response with:
    - Clear section headers
-   - **Bold** for questions and important text
-   - *Italic* for instructions and notes
+   - Bold for questions and important text
+   - Italic for instructions and notes
    - Numbered questions
    - Proper answer keys
 
-4. **Make tests practical and educational:**
+4. Make tests practical and educational:
    - Include real-world applications
    - Provide explanations for correct answers
    - Add difficulty progression
    - Include time recommendations
 
-Generate a comprehensive test based on this request: "${message}"`;
+Generate a comprehensive test based on: "${message}"`;
 
-        // ACTUALLY CALL GROQ FOR TEST GENERATION
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -82,15 +79,23 @@ Generate a comprehensive test based on this request: "${message}"`;
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Groq test generation error:', errorText);
-            throw new Error(`Groq API error: ${response.status}`);
+            const err = await response.text().catch(() => 'Unknown error');
+            return res.status(response.status).json({ 
+                error: 'Groq API error', 
+                detail: err 
+            });
         }
 
         const data = await response.json();
-        const testContent = data.choices[0].message.content;
+        const testContent = data.choices?.[0]?.message?.content;
+
+        if (!testContent || !testContent.trim()) {
+            return res.status(502).json({ 
+                error: 'Empty test generation response' 
+            });
+        }
         
-        console.log(`✅ Test generated successfully`);
+        console.log('Test generated successfully');
         res.status(200).json({
             response: testContent,
             provider: 'Groq-TestGen',
@@ -102,7 +107,7 @@ Generate a comprehensive test based on this request: "${message}"`;
         console.error('Test generation error:', error);
         res.status(500).json({
             error: 'Test generation failed',
-            response: `Error generating test: ${error.message}`
+            detail: error.message
         });
     }
 };
