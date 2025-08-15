@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS AI - Ultimate Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="jarvis-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">⚡</div>
+                    <h1>JARVIS</h1>
+                </div>
+                <div class="status">
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span id="statusText">Online</span>
+                    </div>
+                    <div class="api-status" id="apiStatus">Multi-AI Ready</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <main class="main-container">
+            <!-- Messages Container -->
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-message">
+                    <div class="message-content">
+                        <h3>🤖 JARVIS AI Assistant</h3>
+                        <p>Just A Rather Very Intelligent System is now online. I have access to multiple AI providers for optimal responses.</p>
+                        <div class="feature-highlight">
+                            <strong>Enhanced Capabilities:</strong>
+                            <ul>
+                                <li>📚 Educational content (CBSE specialized)</li>
+                                <li>📝 Test generation and practice questions</li>
+                                <li>🔊 Optional voice responses (click speaker icons)</li>
+                                <li>🎯 Smart AI provider selection</li>
+                                <li>💡 Unlimited topic discussions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                <span>🤖 JARVIS is thinking</span>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="quick-btn" data-message="Explain photosynthesis in detail with examples">
+                🌱 Photosynthesis
+            </button>
+            <button class="quick-btn" data-message="Generate a practice test for CBSE Class 10 Mathematics">
+                📊 Generate Test
+            </button>
+            <button class="quick-btn" data-message="Help me create a study plan for board exams">
+                📅 Study Plan
+            </button>
+            <button class="quick-btn" data-message="Solve quadratic equations step by step">
+                🧮 Math Help
+            </button>
+            <button class="quick-btn" data-message="Explain Newton's laws of motion with real examples">
+                ⚡ Physics
+            </button>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <form class="input-container" id="messageForm">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask JARVIS anything - unlimited topics, test generation, educational help..."
+                        rows="1"
+                        maxlength="5000"
+                    ></textarea>
+                </div>
+                <div class="control-buttons">
+                    <button type="button" id="recordBtn" title="Voice Input" aria-label="Voice Input">
+                        🎤
+                    </button>
+                    <button type="submit" id="sendBtn" title="Send Message" aria-label="Send Message">
+                        Send
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Voice Indicator -->
+        <div id="jarvisVoiceIndicator">
+            <span>🎤</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
