@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v6.0-SingleAPI";
+        this.version = "JARVIS-Ultimate-v6.1-CleanAPI";
         this.isProcessing = false;
         this.conversationHistory = [];
         this.maxRetries = 3;
@@ -10,16 +10,17 @@ class JarvisAIUltimate {
     }
 
     async initialize() {
-        console.log("🤖 Initializing JARVIS with single API provider...");
+        console.log("🤖 Initializing JARVIS...");
         
         try {
             await this.waitForDOM();
             this.initializeUIElements();
             this.setupEventListeners();
-            this.updateSystemStatus("JARVIS Online", "Groq AI Ready");
-            console.log("✅ JARVIS Ultimate - Single API Mode Active");
+            this.initializeVoiceSystem();
+            this.updateSystemStatus("JARVIS Online", "Ready");
+            console.log("✅ JARVIS System Active");
         } catch (error) {
-            console.error("❌ System initialization failed:", error);
+            console.error("❌ Initialization failed:", error);
             this.handleInitializationError(error);
         }
     }
@@ -38,12 +39,13 @@ class JarvisAIUltimate {
             messageInput: document.getElementById('messageInput'),
             messageForm: document.getElementById('messageForm'),
             sendBtn: document.getElementById('sendBtn'),
+            recordBtn: document.getElementById('recordBtn'),
             typingIndicator: document.getElementById('typingIndicator'),
             statusText: document.getElementById('statusText'),
-            apiStatus: document.getElementById('apiStatus')
+            apiStatus: document.getElementById('apiStatus'),
+            voiceIndicator: document.getElementById('jarvisVoiceIndicator')
         };
 
-        // Validate required elements
         const missingElements = [];
         for (const [name, element] of Object.entries(this.elements)) {
             if (!element) {
@@ -57,20 +59,18 @@ class JarvisAIUltimate {
     }
 
     setupEventListeners() {
-        // Form submission
         this.elements.messageForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.processUserMessage();
         });
 
-        // Send button
         this.elements.sendBtn.addEventListener('click', (e) => {
             e.preventDefault();
             this.processUserMessage();
         });
 
-        // Input handling
         this.elements.messageInput.addEventListener('input', () => {
+            this.autoResizeTextarea();
             this.updateSendButton();
         });
 
@@ -81,14 +81,88 @@ class JarvisAIUltimate {
             }
         });
 
-        // Quick action buttons
         document.querySelectorAll('.quick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const message = btn.getAttribute('data-message');
                 this.elements.messageInput.value = message;
+                this.autoResizeTextarea();
                 this.processUserMessage();
             });
         });
+    }
+
+    initializeVoiceSystem() {
+        // Voice recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            this.recognition.lang = 'en-US';
+
+            this.elements.recordBtn.addEventListener('click', () => {
+                this.toggleVoiceInput();
+            });
+
+            this.recognition.onstart = () => {
+                this.isListening = true;
+                this.elements.recordBtn.classList.add('recording');
+                this.elements.voiceIndicator.classList.add('listening');
+            };
+
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                this.elements.messageInput.value = transcript;
+                this.autoResizeTextarea();
+                setTimeout(() => this.processUserMessage(), 500);
+            };
+
+            this.recognition.onend = () => {
+                this.isListening = false;
+                this.elements.recordBtn.classList.remove('recording');
+                this.elements.voiceIndicator.classList.remove('listening');
+            };
+        } else {
+            this.elements.recordBtn.style.display = 'none';
+        }
+
+        // Speech synthesis
+        this.synthesis = window.speechSynthesis;
+        if (this.synthesis) {
+            const loadVoices = () => {
+                this.voices = this.synthesis.getVoices();
+            };
+            this.synthesis.addEventListener('voiceschanged', loadVoices);
+            loadVoices();
+        }
+    }
+
+    toggleVoiceInput() {
+        if (!this.recognition) return;
+
+        if (this.isListening) {
+            this.recognition.stop();
+        } else {
+            try {
+                this.recognition.start();
+            } catch (error) {
+                console.error("Voice input error:", error);
+            }
+        }
+    }
+
+    autoResizeTextarea() {
+        const textarea = this.elements.messageInput;
+        textarea.style.height = 'auto';
+        const maxHeight = 200;
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.height = newHeight + 'px';
+    }
+
+    updateSendButton() {
+        const hasText = this.elements.messageInput.value.trim().length > 0;
+        this.elements.sendBtn.disabled = !hasText || this.isProcessing;
     }
 
     async processUserMessage() {
@@ -102,64 +176,43 @@ class JarvisAIUltimate {
 
         this.isProcessing = true;
         this.elements.messageInput.value = '';
+        this.elements.messageInput.style.height = '54px';
         this.updateSendButton();
 
-        // Add user message to chat
         this.addMessage(message, 'user');
-        
-        // Show typing indicator
         this.showTypingIndicator();
-        this.updateSystemStatus("JARVIS thinking...", "Processing your request");
+        this.updateSystemStatus("Processing...", "AI thinking...");
 
         try {
-            // Add to conversation history
             this.conversationHistory.push({
                 role: 'user',
                 content: message,
                 timestamp: Date.now()
             });
 
-            // Keep history manageable
             if (this.conversationHistory.length > 20) {
                 this.conversationHistory = this.conversationHistory.slice(-10);
             }
 
-            // Get AI response with retry logic
             const response = await this.getAIResponseWithRetry(message);
             
-            // Add AI response to history
             this.conversationHistory.push({
                 role: 'assistant',
                 content: response.text,
                 timestamp: Date.now()
             });
 
-            // Hide typing indicator
             this.hideTypingIndicator();
-            
-            // Add AI message to chat
             this.addMessage(response.text, 'jarvis', true);
-            
-            // Update status
             this.updateSystemStatus("Response complete", `via ${response.provider}`);
 
         } catch (error) {
-            console.error("❌ Error processing message:", error);
+            console.error("❌ Error:", error);
             this.hideTypingIndicator();
             
-            // Show user-friendly error message
-            let errorMessage = "I'm working perfectly for your school presentation! ";
-            
-            if (error.message.includes("fetch")) {
-                errorMessage += "There might be a temporary network hiccup, but JARVIS is fully operational and ready to demonstrate.";
-            } else if (error.message.includes("405")) {
-                errorMessage += "The backend is running but there's a small configuration issue. Your presentation will go great!";
-            } else {
-                errorMessage += "All systems are working normally. Your Arc Reactor intro looks amazing!";
-            }
-            
-            this.addMessage(errorMessage, 'jarvis');
-            this.updateSystemStatus("JARVIS Ready", "All systems operational");
+            // Show only the actual error - no fake motivational messages
+            this.addMessage(`❌ Error: ${this.escapeHTML(error.message || 'Unknown error')}`, 'jarvis');
+            this.updateSystemStatus("Error", error.message || 'Unknown error');
         } finally {
             this.isProcessing = false;
             this.updateSendButton();
@@ -174,34 +227,38 @@ class JarvisAIUltimate {
         
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
-                console.log(`📡 Attempt ${attempt}/${this.maxRetries} - Calling backend...`);
+                console.log(`📡 Attempt ${attempt}/${this.maxRetries}`);
                 
-                const response = await fetch('/api/chat', {
+                const isTestRequest = this.isTestGenerationRequest(message);
+                const endpoint = isTestRequest ? '/api/test-generator' : '/api/chat';
+                
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         message: message,
-                        history: this.conversationHistory.slice(-6)
+                        history: this.conversationHistory.slice(-6),
+                        requestType: isTestRequest ? 'test-generation' : 'conversation'
                     })
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(`Backend error ${response.status}: ${errorData.error || 'Unknown error'}`);
+                    throw new Error(`${response.status}: ${errorData.error || errorData.detail || 'Unknown error'}`);
                 }
 
                 const data = await response.json();
                 
                 if (!data.response) {
-                    throw new Error('No response from AI provider');
+                    throw new Error('No response from AI service');
                 }
 
                 console.log(`✅ Success on attempt ${attempt}`);
                 return {
                     text: data.response,
-                    provider: data.provider || "Groq-Ultra-Fast"
+                    provider: data.provider || "Groq"
                 };
 
             } catch (error) {
@@ -210,18 +267,27 @@ class JarvisAIUltimate {
                 
                 if (attempt < this.maxRetries) {
                     this.updateSystemStatus(`Retrying... (${attempt}/${this.maxRetries})`, "Please wait");
-                    await this.delay(this.retryDelay * attempt); // Exponential backoff
+                    await this.delay(this.retryDelay * attempt);
                 }
             }
         }
 
-        throw new Error(`All ${this.maxRetries} attempts failed. Last error: ${lastError.message}`);
+        throw new Error(`Failed after ${this.maxRetries} attempts: ${lastError.message}`);
+    }
+
+    isTestGenerationRequest(message) {
+        const testKeywords = [
+            'test', 'quiz', 'exam', 'practice', 'questions', 'mcq', 'assessment',
+            'generate test', 'create quiz', 'practice questions', 'mock test'
+        ];
+        
+        const messageLower = message.toLowerCase();
+        return testKeywords.some(keyword => messageLower.includes(keyword));
     }
 
     addMessage(content, sender, withSpeaker = false) {
         const messagesContainer = this.elements.messagesContainer;
         
-        // Create message element
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
         
@@ -233,7 +299,6 @@ class JarvisAIUltimate {
         } else {
             messageContent.innerHTML = this.formatAIContent(content);
             
-            // Add speaker icon for JARVIS messages
             if (withSpeaker) {
                 const speakerIcon = document.createElement('div');
                 speakerIcon.className = 'speaker-icon';
@@ -248,21 +313,18 @@ class JarvisAIUltimate {
         
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
-        
-        // Scroll to bottom
         this.scrollToBottom();
     }
 
     formatAIContent(content) {
-        // Enhanced formatting for AI responses
         return content
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-            .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
-            .replace(/\n\n/g, '</p><p>') // Paragraphs
-            .replace(/\n/g, '<br>') // Line breaks
-            .replace(/^/, '<p>') // Start paragraph
-            .replace(/$/, '</p>'); // End paragraph
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/^/, '<p>')
+            .replace(/$/, '</p>');
     }
 
     escapeHTML(text) {
@@ -294,32 +356,46 @@ class JarvisAIUltimate {
         }
     }
 
-    updateSendButton() {
-        const hasText = this.elements.messageInput.value.trim().length > 0;
-        this.elements.sendBtn.disabled = !hasText || this.isProcessing;
-    }
-
     speakText(text) {
-        if (!window.speechSynthesis) return;
+        if (!this.synthesis) return;
         
-        // Clean text for speech
         const cleanText = text
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove markdown bold
-            .replace(/\*(.*?)\*/g, '$1') // Remove markdown italic
-            .substring(0, 500); // Limit length
+            .replace(/<[^>]*>/g, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/[🤖📚📊🌱🏛️⚡🌍📖🔍💡✅❌⚠️🎯🚀🌟💎]/g, '')
+            .substring(0, 500);
         
         if (cleanText.length < 10) return;
         
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
+        this.synthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 0.9;
         utterance.volume = 0.8;
         utterance.pitch = 0.8;
         
-        window.speechSynthesis.speak(utterance);
+        const preferredVoices = this.voices?.filter(voice => 
+            voice.name.toLowerCase().includes('microsoft') ||
+            voice.name.toLowerCase().includes('google') ||
+            voice.lang.includes('en-US')
+        );
+        
+        if (preferredVoices && preferredVoices.length > 0) {
+            utterance.voice = preferredVoices[0];
+        }
+        
+        this.elements.voiceIndicator.classList.add('speaking');
+        
+        utterance.onend = () => {
+            this.elements.voiceIndicator.classList.remove('speaking');
+        };
+        
+        utterance.onerror = () => {
+            this.elements.voiceIndicator.classList.remove('speaking');
+        };
+        
+        this.synthesis.speak(utterance);
     }
 
     handleInitializationError(error) {
@@ -379,13 +455,13 @@ window.addEventListener('error', (event) => {
 
 console.log(`
 🤖 ═══════════════════════════════════════════════════
-   JARVIS AI ULTIMATE - Single API Mode
+   JARVIS AI ULTIMATE - Clean API Mode
    ═══════════════════════════════════════════════════
    🔵 Circle Arc Reactor Intro
    🎨 Perplexity-Style Interface  
-   🧠 Groq AI Integration (Single Provider)
+   🧠 Groq AI Integration (Real Responses Only)
    🔊 Voice Response System
-   🔄 Retry Logic with Backoff
-   ⚡ Optimized for School Presentation
+   🔄 Retry Logic
+   ⚡ Zero Fake Responses
    ═══════════════════════════════════════════════════
 `);
