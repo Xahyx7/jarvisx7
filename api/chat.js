@@ -14,132 +14,74 @@ module.exports = async (req, res) => {
     try {
         const { message, history = [] } = req.body;
 
-        if (!message || typeof message !== 'string') {
-            return res.status(400).json({ 
-                error: 'Invalid message', 
-                received: typeof message 
-            });
+        if (!message) {
+            return res.status(400).json({ error: 'Message required' });
         }
 
-        console.log(`🤖 JARVIS processing: "${message.substring(0, 100)}"`);
+        console.log(`🤖 Processing: ${message}`);
 
         const apiKey = process.env.GROQ_API_KEY;
-        if (!apiKey || apiKey.length < 20) {
-            console.error('❌ Groq API key missing or invalid');
-            return res.status(503).json({ 
-                error: 'API configuration error',
-                detail: 'Groq API key not properly configured'
-            });
+        if (!apiKey) {
+            return res.status(503).json({ error: 'API key not configured' });
         }
 
+        // EXACT same format that worked in Hoppscotch
         const payload = {
-            model: 'llama-3.3-70b-versatile', // ← Updated to current model
+            model: "llama-3.3-70b-versatile",
             messages: [
-                { 
-                    role: 'system', 
-                    content: 'You are JARVIS, Tony Stark\'s AI assistant. Be helpful, intelligent, and engaging. Always provide complete responses.' 
-                },
-                ...history.slice(-4),
-                { role: 'user', content: message }
+                {
+                    role: "user",
+                    content: message
+                }
             ],
-            max_tokens: 2000,
-            temperature: 0.7,
-            top_p: 0.9,
-            stream: false
+            max_tokens: 1000  // Reduced from 2000 to avoid limits
         };
 
-        console.log('📡 Calling Groq API with llama-3.3-70b-versatile...');
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        console.log('📡 Calling Groq API...');
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'User-Agent': 'JARVIS-Ultimate/6.2'
+                'Authorization': `Bearer ${apiKey}`
             },
-            body: JSON.stringify(payload),
-            signal: controller.signal
+            body: JSON.stringify(payload)
         });
 
-        clearTimeout(timeoutId);
-
-        console.log(`📊 Groq response status: ${response.status}`);
+        console.log(`📊 Status: ${response.status}`);
 
         if (!response.ok) {
-            let errorDetail = 'Unknown error';
-            try {
-                const errorData = await response.text();
-                errorDetail = errorData;
-                console.error('❌ Groq API error:', response.status, errorDetail);
-            } catch (e) {
-                console.error('❌ Failed to read error response');
-            }
-
-            return res.status(response.status >= 500 ? 503 : response.status).json({
+            const errorText = await response.text();
+            console.error('❌ Groq error:', errorText);
+            return res.status(response.status).json({
                 error: 'Groq API error',
-                status: response.status,
-                detail: errorDetail
+                detail: errorText
             });
         }
 
-        let data;
-        try {
-            data = await response.json();
-            console.log('✅ Groq response received');
-        } catch (e) {
-            console.error('❌ Failed to parse Groq JSON response');
-            return res.status(502).json({
-                error: 'Invalid response format',
-                detail: 'Could not parse AI response'
-            });
-        }
-
+        const data = await response.json();
         const aiMessage = data?.choices?.[0]?.message?.content;
 
         if (!aiMessage) {
-            console.error('❌ No AI content in response:', JSON.stringify(data, null, 2));
             return res.status(502).json({
                 error: 'No AI response',
-                detail: 'AI returned empty content',
                 debug: data
             });
         }
 
-        if (typeof aiMessage !== 'string' || aiMessage.trim().length === 0) {
-            console.error('❌ Invalid AI response format');
-            return res.status(502).json({
-                error: 'Invalid AI response',
-                detail: 'Response is not valid text'
-            });
-        }
-
-        console.log(`✅ Success! Response length: ${aiMessage.length} chars`);
+        console.log(`✅ Success: ${aiMessage.length} chars`);
 
         return res.status(200).json({
-            response: aiMessage.trim(),
-            provider: 'Groq-Llama-3.3-70B',
-            model: 'llama-3.3-70b-versatile',
-            tokens: data?.usage?.total_tokens || 0,
+            response: aiMessage,
+            provider: 'Groq-Llama-3.3',
             timestamp: new Date().toISOString()
         });
 
     } catch (error) {
-        console.error('💥 Server error:', error);
-        
-        if (error.name === 'AbortError') {
-            return res.status(408).json({
-                error: 'Request timeout',
-                detail: 'AI service took too long to respond'
-            });
-        }
-
+        console.error('💥 Error:', error);
         return res.status(500).json({
-            error: 'Internal server error',
-            detail: error.message,
-            type: error.name
+            error: 'Server error',
+            detail: error.message
         });
     }
 };
