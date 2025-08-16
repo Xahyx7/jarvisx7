@@ -67,7 +67,7 @@ Generate a comprehensive test based on: "${message}"`;
                 'Authorization': `Bearer ${groqKey}`
             },
             body: JSON.stringify({
-                model: 'mixtral-8x7b-32768',
+                model: 'llama-3.3-70b-versatile', // ← Updated model
                 messages: [
                     { role: 'system', content: testPrompt },
                     ...(history || []).slice(-4),
@@ -98,7 +98,7 @@ Generate a comprehensive test based on: "${message}"`;
         console.log('Test generated successfully');
         res.status(200).json({
             response: testContent,
-            provider: 'Groq-TestGen',
+            provider: 'Groq-Llama-3.3-70B',
             type: 'test-generation',
             timestamp: new Date().toISOString()
         });
