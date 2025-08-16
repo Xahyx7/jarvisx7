@@ -3,108 +3,379 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JARVIS AI - Ultimate Assistant</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>JARVIS AI Ultimate</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0f0f;
+            color: #e5e7eb;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background-color: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            padding: 0.5rem;
+        }
+
+        .jarvis-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #4f7cff 0%, #00d4ff 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+        }
+
+        .jarvis-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #f9fafb;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .menu-item:hover {
+            background-color: #2a2a2a;
+            color: #e5e7eb;
+        }
+
+        .menu-item.active {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        /* Main Chat Area */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .top-bar {
+            height: 60px;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            font-weight: 600;
+            color: #f9fafb;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message.user-message {
+            align-self: flex-end;
+        }
+
+        .message.jarvis-message {
+            align-self: flex-start;
+        }
+
+        .message-content {
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .jarvis-message .message-content {
+            background-color: #262626;
+            color: #e5e7eb;
+            border-bottom-left-radius: 0.25rem;
+            border: 1px solid #404040;
+        }
+
+        .speaker-icon {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-top: 0.5rem;
+            align-self: flex-start;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .speaker-icon:hover {
+            color: #2563eb;
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 1.5rem 0;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 0.75rem;
+        }
+
+        #messageInput {
+            flex: 1;
+            background-color: #262626;
+            border: 1px solid #404040;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            color: #e5e7eb;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            min-height: 54px;
+            max-height: 150px;
+            transition: border-color 0.2s ease;
+        }
+
+        #messageInput:focus {
+            border-color: #2563eb;
+        }
+
+        #messageInput::placeholder {
+            color: #6b7280;
+        }
+
+        #sendBtn {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border: none;
+            border-radius: 0.75rem;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+
+        #sendBtn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        #sendBtn:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Typing Indicator */
+        #typingIndicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.25rem;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #6b7280;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typingDot {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        /* Scrollbar */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #404040;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background-color: #525252;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .chat-container {
+                padding: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="jarvis-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo-icon">⚡</div>
-                    <h1>JARVIS</h1>
-                </div>
-                <div class="status">
-                    <div class="status-indicator">
-                        <div class="status-dot"></div>
-                        <span id="statusText">Online</span>
-                    </div>
-                    <div class="api-status" id="apiStatus">Multi-AI Ready</div>
-                </div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="jarvis-logo">J</div>
+                <div class="jarvis-title">JARVIS</div>
             </div>
-        </header>
-
-        <!-- Main Container -->
-        <main class="main-container">
-            <!-- Messages Container -->
-            <div class="messages-container" id="messagesContainer">
-                <div class="welcome-message">
-                    <div class="message-content">
-                        <h3>🤖 JARVIS AI Assistant</h3>
-                        <p>Just A Rather Very Intelligent System is now online. I have access to multiple AI providers for optimal responses.</p>
-                        <div class="feature-highlight">
-                            <strong>Enhanced Capabilities:</strong>
-                            <ul>
-                                <li>📚 Educational content (CBSE specialized)</li>
-                                <li>📝 Test generation and practice questions</li>
-                                <li>🔊 Optional voice responses (click speaker icons)</li>
-                                <li>🎯 Smart AI provider selection</li>
-                                <li>💡 Unlimited topic discussions</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+            <div class="sidebar-menu">
+                <div class="menu-item active">💬 Chat</div>
+                <div class="menu-item">📝 Test Generator</div>
+                <div class="menu-item">🔧 Settings</div>
+                <div class="menu-item">📊 Analytics</div>
+                <div class="menu-item">❓ Help</div>
             </div>
-
-            <!-- Typing Indicator -->
-            <div class="typing-indicator" id="typingIndicator" style="display: none;">
-                <span>🤖 JARVIS is thinking</span>
-                <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
-        </main>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <button class="quick-btn" data-message="Explain photosynthesis in detail with examples">
-                🌱 Photosynthesis
-            </button>
-            <button class="quick-btn" data-message="Generate a practice test for CBSE Class 10 Mathematics">
-                📊 Generate Test
-            </button>
-            <button class="quick-btn" data-message="Help me create a study plan for board exams">
-                📅 Study Plan
-            </button>
-            <button class="quick-btn" data-message="Solve quadratic equations step by step">
-                🧮 Math Help
-            </button>
-            <button class="quick-btn" data-message="Explain Newton's laws of motion with real examples">
-                ⚡ Physics
-            </button>
         </div>
 
-        <!-- Input Area -->
-        <div class="input-area">
-            <form class="input-container" id="messageForm">
-                <div class="input-wrapper">
-                    <textarea 
-                        id="messageInput" 
-                        placeholder="Ask JARVIS anything - unlimited topics, test generation, educational help..."
-                        rows="1"
-                        maxlength="5000"
-                    ></textarea>
-                </div>
-                <div class="control-buttons">
-                    <button type="button" id="recordBtn" title="Voice Input" aria-label="Voice Input">
-                        🎤
-                    </button>
-                    <button type="submit" id="sendBtn" title="Send Message" aria-label="Send Message">
-                        Send
-                    </button>
-                </div>
-            </form>
-        </div>
+        <!-- Main Chat Area -->
+        <div class="main-area">
+            <div class="top-bar">
+                <span>JARVIS AI Ultimate - Your Personal Assistant</span>
+            </div>
 
-        <!-- Voice Indicator -->
-        <div id="jarvisVoiceIndicator">
-            <span>🎤</span>
+            <div class="chat-container">
+                <div id="messagesContainer" class="chat-messages">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+
+                <div id="typingIndicator">
+                    <span>JARVIS is thinking</span>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <form id="messageForm" class="input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="Message JARVIS..." 
+                            rows="1"
+                            autocomplete="off"
+                        ></textarea>
+                        <button type="submit" id="sendBtn" disabled>Send</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <span id="statusText">Ready</span>
+                <span>•</span>
+                <span id="apiStatus">Groq AI Connected</span>
+            </div>
         </div>
     </div>
 
