@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
+        <!-- FIXED: Sidebar - position fixed, no scroll -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="jarvis-logo">J</div>
@@ -25,13 +25,14 @@
             </div>
         </div>
 
-        <!-- Main Chat Area -->
+        <!-- FIXED: Main Chat Area with margin for sidebar -->
         <div class="main-area">
             <div class="top-bar">
                 <span>JARVIS AI Ultimate - Your Personal Assistant</span>
             </div>
 
             <div class="chat-container">
+                <!-- FIXED: Chat messages with independent scroll -->
                 <div id="messagesContainer" class="chat-messages">
                     <!-- Messages will be added here dynamically -->
                 </div>
@@ -45,6 +46,7 @@
                     </div>
                 </div>
 
+                <!-- FIXED: Input container fixed at bottom -->
                 <div class="input-container">
                     <form id="messageForm" class="input-wrapper">
                         <textarea 
