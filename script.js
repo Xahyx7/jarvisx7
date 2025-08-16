@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v6.1-CleanAPI";
+        this.version = "JARVIS-Ultimate-v6.3-Fixed";
         this.isProcessing = false;
         this.conversationHistory = [];
         this.maxRetries = 3;
@@ -10,15 +10,15 @@ class JarvisAIUltimate {
     }
 
     async initialize() {
-        console.log("🤖 Initializing JARVIS...");
+        console.log("🤖 Initializing JARVIS Ultimate...");
         
         try {
             await this.waitForDOM();
             this.initializeUIElements();
             this.setupEventListeners();
             this.initializeVoiceSystem();
-            this.updateSystemStatus("JARVIS Online", "Ready");
-            console.log("✅ JARVIS System Active");
+            this.updateSystemStatus("JARVIS Online", "Ready for commands");
+            console.log("✅ JARVIS System Active - All features operational");
         } catch (error) {
             console.error("❌ Initialization failed:", error);
             this.handleInitializationError(error);
@@ -48,7 +48,7 @@ class JarvisAIUltimate {
 
         const missingElements = [];
         for (const [name, element] of Object.entries(this.elements)) {
-            if (!element) {
+            if (!element && name !== 'recordBtn' && name !== 'voiceIndicator') { // These are optional
                 missingElements.push(name);
             }
         }
@@ -59,16 +59,19 @@ class JarvisAIUltimate {
     }
 
     setupEventListeners() {
+        // Form submission
         this.elements.messageForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.processUserMessage();
+            this.processUserMessage('conversation');
         });
 
+        // Send button
         this.elements.sendBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            this.processUserMessage();
+            this.processUserMessage('conversation');
         });
 
+        // Input handling
         this.elements.messageInput.addEventListener('input', () => {
             this.autoResizeTextarea();
             this.updateSendButton();
@@ -77,16 +80,29 @@ class JarvisAIUltimate {
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.processUserMessage();
+                this.processUserMessage('conversation');
             }
         });
 
+        // FIXED: Preset buttons with proper request type detection
         document.querySelectorAll('.quick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const message = btn.getAttribute('data-message');
+                const buttonText = btn.textContent.toLowerCase();
+                
+                // Auto-detect if this is a test generation request
+                const isTestRequest = buttonText.includes('test') || 
+                                    buttonText.includes('quiz') || 
+                                    buttonText.includes('practice') ||
+                                    message.toLowerCase().includes('test') ||
+                                    message.toLowerCase().includes('quiz') ||
+                                    message.toLowerCase().includes('generate');
+                
+                const requestType = isTestRequest ? 'test-generation' : 'conversation';
+                
                 this.elements.messageInput.value = message;
                 this.autoResizeTextarea();
-                this.processUserMessage();
+                this.processUserMessage(requestType);
             });
         });
     }
@@ -101,29 +117,35 @@ class JarvisAIUltimate {
             this.recognition.interimResults = false;
             this.recognition.lang = 'en-US';
 
-            this.elements.recordBtn.addEventListener('click', () => {
-                this.toggleVoiceInput();
-            });
+            if (this.elements.recordBtn) {
+                this.elements.recordBtn.addEventListener('click', () => {
+                    this.toggleVoiceInput();
+                });
 
-            this.recognition.onstart = () => {
-                this.isListening = true;
-                this.elements.recordBtn.classList.add('recording');
-                this.elements.voiceIndicator.classList.add('listening');
-            };
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    this.elements.recordBtn.classList.add('recording');
+                    if (this.elements.voiceIndicator) {
+                        this.elements.voiceIndicator.classList.add('listening');
+                    }
+                };
 
-            this.recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                this.elements.messageInput.value = transcript;
-                this.autoResizeTextarea();
-                setTimeout(() => this.processUserMessage(), 500);
-            };
+                this.recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    this.elements.messageInput.value = transcript;
+                    this.autoResizeTextarea();
+                    setTimeout(() => this.processUserMessage('conversation'), 500);
+                };
 
-            this.recognition.onend = () => {
-                this.isListening = false;
-                this.elements.recordBtn.classList.remove('recording');
-                this.elements.voiceIndicator.classList.remove('listening');
-            };
-        } else {
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    this.elements.recordBtn.classList.remove('recording');
+                    if (this.elements.voiceIndicator) {
+                        this.elements.voiceIndicator.classList.remove('listening');
+                    }
+                };
+            }
+        } else if (this.elements.recordBtn) {
             this.elements.recordBtn.style.display = 'none';
         }
 
@@ -165,7 +187,7 @@ class JarvisAIUltimate {
         this.elements.sendBtn.disabled = !hasText || this.isProcessing;
     }
 
-    async processUserMessage() {
+    async processUserMessage(requestType = 'conversation') {
         if (this.isProcessing) return;
 
         const message = this.elements.messageInput.value.trim();
@@ -179,40 +201,54 @@ class JarvisAIUltimate {
         this.elements.messageInput.style.height = '54px';
         this.updateSendButton();
 
+        // Add user message to chat
         this.addMessage(message, 'user');
+        
+        // Show typing indicator
         this.showTypingIndicator();
-        this.updateSystemStatus("Processing...", "AI thinking...");
+        this.updateSystemStatus("JARVIS thinking...", `Processing ${requestType}...`);
 
         try {
+            // Add to conversation history
             this.conversationHistory.push({
                 role: 'user',
                 content: message,
                 timestamp: Date.now()
             });
 
+            // Keep history manageable
             if (this.conversationHistory.length > 20) {
                 this.conversationHistory = this.conversationHistory.slice(-10);
             }
 
-            const response = await this.getAIResponseWithRetry(message);
+            // Get AI response with retry logic
+            const response = await this.getAIResponseWithRetry(message, requestType);
             
-            this.conversationHistory.push({
-                role: 'assistant',
-                content: response.text,
-                timestamp: Date.now()
-            });
+            // Add AI response to history (only for conversations, not tests)
+            if (requestType === 'conversation') {
+                this.conversationHistory.push({
+                    role: 'assistant',
+                    content: response.text,
+                    timestamp: Date.now()
+                });
+            }
 
+            // Hide typing indicator
             this.hideTypingIndicator();
+            
+            // Add AI message to chat
             this.addMessage(response.text, 'jarvis', true);
+            
+            // Update status
             this.updateSystemStatus("Response complete", `via ${response.provider}`);
 
         } catch (error) {
-            console.error("❌ Error:", error);
+            console.error("❌ Error processing message:", error);
             this.hideTypingIndicator();
             
-            // Show only the actual error - no fake motivational messages
-            this.addMessage(`❌ Error: ${this.escapeHTML(error.message || 'Unknown error')}`, 'jarvis');
-            this.updateSystemStatus("Error", error.message || 'Unknown error');
+            // Show actual error - no fake messages
+            this.addMessage(`❌ Error: ${error.message}`, 'jarvis');
+            this.updateSystemStatus("Error", error.message);
         } finally {
             this.isProcessing = false;
             this.updateSendButton();
@@ -222,15 +258,15 @@ class JarvisAIUltimate {
         }
     }
 
-    async getAIResponseWithRetry(message) {
+    async getAIResponseWithRetry(message, requestType) {
         let lastError;
         
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
-                console.log(`📡 Attempt ${attempt}/${this.maxRetries}`);
+                console.log(`📡 Attempt ${attempt}/${this.maxRetries} - Type: ${requestType}`);
                 
-                const isTestRequest = this.isTestGenerationRequest(message);
-                const endpoint = isTestRequest ? '/api/test-generator' : '/api/chat';
+                // Determine endpoint based on request type
+                const endpoint = requestType === 'test-generation' ? '/api/test-generator' : '/api/chat';
                 
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -239,8 +275,7 @@ class JarvisAIUltimate {
                     },
                     body: JSON.stringify({
                         message: message,
-                        history: this.conversationHistory.slice(-6),
-                        requestType: isTestRequest ? 'test-generation' : 'conversation'
+                        history: this.conversationHistory.slice(-6)
                     })
                 });
 
@@ -255,10 +290,10 @@ class JarvisAIUltimate {
                     throw new Error('No response from AI service');
                 }
 
-                console.log(`✅ Success on attempt ${attempt}`);
+                console.log(`✅ Success on attempt ${attempt} - ${requestType}`);
                 return {
                     text: data.response,
-                    provider: data.provider || "Groq"
+                    provider: data.provider || "Groq-Llama-3.3"
                 };
 
             } catch (error) {
@@ -275,19 +310,10 @@ class JarvisAIUltimate {
         throw new Error(`Failed after ${this.maxRetries} attempts: ${lastError.message}`);
     }
 
-    isTestGenerationRequest(message) {
-        const testKeywords = [
-            'test', 'quiz', 'exam', 'practice', 'questions', 'mcq', 'assessment',
-            'generate test', 'create quiz', 'practice questions', 'mock test'
-        ];
-        
-        const messageLower = message.toLowerCase();
-        return testKeywords.some(keyword => messageLower.includes(keyword));
-    }
-
     addMessage(content, sender, withSpeaker = false) {
         const messagesContainer = this.elements.messagesContainer;
         
+        // Create message element
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
         
@@ -299,6 +325,7 @@ class JarvisAIUltimate {
         } else {
             messageContent.innerHTML = this.formatAIContent(content);
             
+            // Add speaker icon for JARVIS messages
             if (withSpeaker) {
                 const speakerIcon = document.createElement('div');
                 speakerIcon.className = 'speaker-icon';
@@ -313,18 +340,21 @@ class JarvisAIUltimate {
         
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
+        
+        // Scroll to bottom
         this.scrollToBottom();
     }
 
     formatAIContent(content) {
+        // Enhanced formatting for AI responses
         return content
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>')
-            .replace(/^/, '<p>')
-            .replace(/$/, '</p>');
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+            .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
+            .replace(/\n\n/g, '</p><p>') // Paragraphs
+            .replace(/\n/g, '<br>') // Line breaks
+            .replace(/^/, '<p>') // Start paragraph
+            .replace(/$/, '</p>'); // End paragraph
     }
 
     escapeHTML(text) {
@@ -359,15 +389,17 @@ class JarvisAIUltimate {
     speakText(text) {
         if (!this.synthesis) return;
         
+        // Clean text for speech
         const cleanText = text
-            .replace(/<[^>]*>/g, '')
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
-            .replace(/[🤖📚📊🌱🏛️⚡🌍📖🔍💡✅❌⚠️🎯🚀🌟💎]/g, '')
-            .substring(0, 500);
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove markdown bold
+            .replace(/\*(.*?)\*/g, '$1') // Remove markdown italic
+            .replace(/[🤖📚📊🌱🏛️⚡🌍📖🔍💡✅❌⚠️🎯🚀🌟💎]/g, '') // Remove emojis
+            .substring(0, 500); // Limit length
         
         if (cleanText.length < 10) return;
         
+        // Cancel any ongoing speech
         this.synthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -375,6 +407,7 @@ class JarvisAIUltimate {
         utterance.volume = 0.8;
         utterance.pitch = 0.8;
         
+        // Try to use a good voice
         const preferredVoices = this.voices?.filter(voice => 
             voice.name.toLowerCase().includes('microsoft') ||
             voice.name.toLowerCase().includes('google') ||
@@ -385,14 +418,20 @@ class JarvisAIUltimate {
             utterance.voice = preferredVoices[0];
         }
         
-        this.elements.voiceIndicator.classList.add('speaking');
+        if (this.elements.voiceIndicator) {
+            this.elements.voiceIndicator.classList.add('speaking');
+        }
         
         utterance.onend = () => {
-            this.elements.voiceIndicator.classList.remove('speaking');
+            if (this.elements.voiceIndicator) {
+                this.elements.voiceIndicator.classList.remove('speaking');
+            }
         };
         
         utterance.onerror = () => {
-            this.elements.voiceIndicator.classList.remove('speaking');
+            if (this.elements.voiceIndicator) {
+                this.elements.voiceIndicator.classList.remove('speaking');
+            }
         };
         
         this.synthesis.speak(utterance);
@@ -455,13 +494,14 @@ window.addEventListener('error', (event) => {
 
 console.log(`
 🤖 ═══════════════════════════════════════════════════
-   JARVIS AI ULTIMATE - Clean API Mode
+   JARVIS AI ULTIMATE - Fixed Preset Buttons
    ═══════════════════════════════════════════════════
    🔵 Circle Arc Reactor Intro
    🎨 Perplexity-Style Interface  
-   🧠 Groq AI Integration (Real Responses Only)
+   🧠 Groq Llama 3.3 70B (Both Chat & Test Generation)
    🔊 Voice Response System
-   🔄 Retry Logic
-   ⚡ Zero Fake Responses
+   🔄 Retry Logic with Smart Request Detection
+   ⚡ Fixed Preset Button Issues
+   📝 Working Test Generation
    ═══════════════════════════════════════════════════
 `);
