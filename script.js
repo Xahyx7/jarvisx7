@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v7.0-Professional";
+        this.version = "JARVIS-Ultimate-v7.1-FixedScroll";
         this.isProcessing = false;
         this.conversationHistory = [];
         this.maxRetries = 3;
@@ -10,7 +10,7 @@ class JarvisAIUltimate {
     }
 
     async initialize() {
-        console.log("🤖 Initializing JARVIS Professional UI...");
+        console.log("🤖 Initializing JARVIS - Fixed Scroll Version...");
         
         try {
             await this.waitForDOM();
@@ -18,7 +18,7 @@ class JarvisAIUltimate {
             this.setupEventListeners();
             this.initializeVoiceSystem();
             this.updateSystemStatus("JARVIS Online", "Ready for commands");
-            console.log("✅ JARVIS Professional UI Active");
+            console.log("✅ JARVIS Fixed Scroll Version Active");
         } catch (error) {
             console.error("❌ Initialization failed:", error);
             this.handleInitializationError(error);
@@ -293,7 +293,7 @@ class JarvisAIUltimate {
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
         
-        // Scroll to bottom
+        // FIXED: Scroll only the chat messages container to bottom
         this.scrollToBottom();
     }
 
@@ -315,11 +315,12 @@ class JarvisAIUltimate {
         return div.innerHTML;
     }
 
+    // FIXED: Scroll only chat messages container, not entire page
     scrollToBottom() {
-        const messagesContainer = this.elements.messagesContainer;
         setTimeout(() => {
+            const messagesContainer = this.elements.messagesContainer;
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 150);
+        }, 100);
     }
 
     showTypingIndicator() {
@@ -392,12 +393,12 @@ if (document.readyState === 'loading') {
 
 console.log(`
 🤖 ═══════════════════════════════════════════════════
-   JARVIS AI ULTIMATE - Professional UI v7.0
+   JARVIS AI ULTIMATE - Fixed Scroll v7.1
    ═══════════════════════════════════════════════════
-   🎨 Perplexity-Style Interface  
+   🎨 Professional UI with Fixed Sidebar
+   🔄 Independent Chat Scrolling
    🧠 Groq Llama 3.3 70B Integration
    🔊 Voice Response System
-   🔄 Smart Request Detection
-   ⚡ Professional & Clean Design
+   ✅ Scrolling Bug Fixed
    ═══════════════════════════════════════════════════
 `);
