@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
             return;
         }
 
-        console.log(`Test generation: ${message.substring(0, 100)}...`);
+        console.log(`📝 Test generation: ${message.substring(0, 100)}...`);
 
         const groqKey = process.env.GROQ_API_KEY;
         
@@ -30,35 +30,21 @@ module.exports = async (req, res) => {
             return;
         }
 
-        const testPrompt = `You are JARVIS's test generation system. Create comprehensive, well-structured tests based on user requests.
-
-INSTRUCTIONS:
-1. For any test generation request, create:
-   - Multiple choice questions (4 options each, mark correct answer)
-   - Short answer questions
-   - Long answer/essay questions when appropriate
-   - Difficulty levels: Easy, Medium, Hard
-
-2. For CBSE subjects (Classes 6-12):
-   - Follow NCERT curriculum guidelines
-   - Include previous year question patterns
-   - Provide marking schemes
-   - Add reference to specific chapters/topics
-
-3. Format your response with:
-   - Clear section headers
-   - Bold for questions and important text
-   - Italic for instructions and notes
-   - Numbered questions
-   - Proper answer keys
-
-4. Make tests practical and educational:
-   - Include real-world applications
-   - Provide explanations for correct answers
-   - Add difficulty progression
-   - Include time recommendations
-
-Generate a comprehensive test based on: "${message}"`;
+        // UPDATED MODEL - Same as chat.js
+        const payload = {
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are JARVIS's test generation system. Create comprehensive, well-structured tests and educational content based on user requests. Include multiple choice questions, explanations, and proper formatting."
+                },
+                {
+                    role: "user", 
+                    content: message
+                }
+            ],
+            max_tokens: 1500
+        };
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -66,39 +52,31 @@ Generate a comprehensive test based on: "${message}"`;
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${groqKey}`
             },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', // ← Updated model
-                messages: [
-                    { role: 'system', content: testPrompt },
-                    ...(history || []).slice(-4),
-                    { role: 'user', content: message }
-                ],
-                max_tokens: 3000,
-                temperature: 0.8
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-            const err = await response.text().catch(() => 'Unknown error');
-            return res.status(response.status).json({ 
-                error: 'Groq API error', 
-                detail: err 
+            const errorText = await response.text();
+            console.error('❌ Test generation error:', errorText);
+            return res.status(response.status).json({
+                error: 'Groq API error',
+                detail: errorText
             });
         }
 
         const data = await response.json();
-        const testContent = data.choices?.[0]?.message?.content;
+        const testContent = data?.choices?.[0]?.message?.content;
 
-        if (!testContent || !testContent.trim()) {
-            return res.status(502).json({ 
-                error: 'Empty test generation response' 
+        if (!testContent) {
+            return res.status(502).json({
+                error: 'No test content generated'
             });
         }
         
-        console.log('Test generated successfully');
+        console.log('✅ Test generated successfully');
         res.status(200).json({
             response: testContent,
-            provider: 'Groq-Llama-3.3-70B',
+            provider: 'Groq-TestGen',
             type: 'test-generation',
             timestamp: new Date().toISOString()
         });
