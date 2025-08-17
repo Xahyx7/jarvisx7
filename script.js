@@ -483,3 +483,33 @@ console.log(`
    ⚡ Current Knowledge + Real-time Search
    ═══════════════════════════════════════════════════
 `);
+// FIXED: Voice synthesis function (add to your existing script.js)
+speakText(text) {
+    if (!this.synthesis) {
+        console.warn('Speech synthesis not available');
+        return;
+    }
+    
+    // Clean text for speech
+    const cleanText = text
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove markdown
+        .replace(/[🤖📚📊🌱⚡🔍💡✅❌]/g, '') // Remove emojis
+        .substring(0, 500);
+    
+    if (cleanText.length < 5) return;
+    
+    // Cancel ongoing speech
+    this.synthesis.cancel();
+    
+    // Create and speak
+    setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+        utterance.pitch = 0.8;
+        
+        this.synthesis.speak(utterance);
+        console.log('🔊 Speaking:', cleanText.substring(0, 50) + '...');
+    }, 100);
+}
