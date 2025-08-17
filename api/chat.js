@@ -4,138 +4,85 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' });
-        return;
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
         const { message, history = [] } = req.body;
 
         if (!message) {
-            res.status(400).json({ error: 'Message is required' });
-            return;
+            return res.status(400).json({ error: 'Message is required' });
         }
 
-        console.log('💬 Processing message:', message.substring(0, 50) + '...');
+        console.log(`💬 Chat handler: ${message.substring(0, 50)}...`);
 
-        let response;
-        let provider;
+        // Detect search queries
+        const isSearchQuery = detectSearchIntent(message);
+        const task = isSearchQuery ? 'search' : 'chat';
 
-        // Try DeepSeek first
-        try {
-            console.log('🧠 Attempting DeepSeek API...');
-            response = await callDeepSeek(message, history);
-            provider = 'DeepSeek (Current Knowledge)';
-            console.log('✅ DeepSeek success');
-        } catch (deepSeekError) {
-            console.log('❌ DeepSeek failed:', deepSeekError.message);
-            
-            // Fallback to Groq
-            try {
-                console.log('⚡ Attempting Groq fallback...');
-                response = await callGroq(message, history);
-                provider = 'Groq (Fallback)';
-                console.log('✅ Groq success');
-            } catch (groqError) {
-                console.log('❌ Groq also failed:', groqError.message);
-                res.status(500).json({ 
-                    error: 'Both APIs failed', 
-                    deepseek_error: deepSeekError.message,
-                    groq_error: groqError.message
-                });
-                return;
-            }
-        }
+        console.log(`🎯 Detected task: ${task}`);
 
-        res.status(200).json({
-            response: response,
-            provider: provider,
-            timestamp: new Date().toISOString()
+        // Route to AI selector
+        const aiResponse = await fetch(`${req.headers.host || 'localhost:3000'}/api/ai-selector`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task: task,
+                message: message,
+                history: history
+            })
         });
+
+        if (!aiResponse.ok) {
+            const errorData = await aiResponse.json();
+            throw new Error(errorData.error || 'AI Selector failed');
+        }
+
+        const result = await aiResponse.json();
+
+        if (task === 'search') {
+            // Format search results for display
+            const formattedResults = result.results.slice(0, 3).map((item, index) => 
+                `${index + 1}. **${item.title}**\n   ${item.snippet}\n   🔗 ${item.url}`
+            ).join('\n\n');
+
+            const searchSummary = `🔍 Here's what I found about "${message}":\n\n${formattedResults}`;
+            
+            return res.status(200).json({
+                response: searchSummary,
+                provider: result.provider,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            return res.status(200).json({
+                response: result.response,
+                provider: result.provider,
+                timestamp: new Date().toISOString()
+            });
+        }
 
     } catch (error) {
         console.error('💥 Chat handler error:', error);
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({
+            error: 'Chat processing failed',
+            detail: error.message
+        });
     }
 };
 
-async function callDeepSeek(message, history) {
-    const messages = [
-        { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses with current knowledge." },
-        ...history.slice(-4),
-        { role: 'user', content: message }
+function detectSearchIntent(message) {
+    const searchKeywords = [
+        'search for', 'find information', 'look up', 'what\'s happening',
+        'latest news', 'current events', 'recent', 'today', 'news',
+        'what happened', 'tell me about', 'information on', 'search'
     ];
-
-    console.log('🔗 DeepSeek request with', messages.length, 'messages');
-
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: messages,
-            max_tokens: 1500,
-            temperature: 0.7
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.log('🔴 DeepSeek HTTP error:', response.status, errorText);
-        throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
     
-    if (!data.choices || !data.choices[0] || !data.choices.message) {
-        throw new Error('Invalid DeepSeek response format');
-    }
-
-    return data.choices.message.content;
-}
-
-async function callGroq(message, history) {
-    const messages = [
-        { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses." },
-        ...history.slice(-4),
-        { role: 'user', content: message }
-    ];
-
-    console.log('🔗 Groq request with', messages.length, 'messages');
-
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: messages,
-            max_tokens: 1500,
-            temperature: 0.7
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.log('🔴 Groq HTTP error:', response.status, errorText);
-        throw new Error(`Groq API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.choices || !data.choices[0] || !data.choices.message) {
-        throw new Error('Invalid Groq response format');
-    }
-
-    return data.choices.message.content;
+    const messageLower = message.toLowerCase();
+    return searchKeywords.some(keyword => messageLower.includes(keyword)) ||
+           messageLower.includes('2024') || messageLower.includes('2025') ||
+           messageLower.includes('latest') || messageLower.includes('current');
 }
