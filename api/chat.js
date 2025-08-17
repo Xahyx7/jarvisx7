@@ -1,44 +1,39 @@
 module.exports = async (req, res) => {
-    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.status(200).end();
+        return;
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
     }
 
     try {
         const { message, history = [] } = req.body;
-        
+
         if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+            res.status(400).json({ error: 'Message is required' });
+            return;
         }
 
-        console.log(`💬 Processing: ${message.substring(0, 50)}...`);
-
-        // Try DeepSeek first, then Groq fallback
         let response;
         let provider;
 
         try {
-            // Try DeepSeek API first
-            console.log('🧠 Trying DeepSeek API...');
             response = await callDeepSeek(message, history);
             provider = 'DeepSeek (Current Knowledge)';
-        } catch (deepSeekError) {
-            console.log('❌ DeepSeek failed, trying Groq fallback...');
-            
+        } catch (e) {
             try {
-                // Fallback to Groq
                 response = await callGroq(message, history);
                 provider = 'Groq (Fallback)';
-            } catch (groqError) {
-                throw new Error(`Both APIs failed. DeepSeek: ${deepSeekError.message}, Groq: ${groqError.message}`);
+            } catch (e) {
+                res.status(500).json({ error: 'Both DeepSeek and Groq APIs failed', detail: e.message });
+                return;
             }
         }
 
@@ -47,19 +42,14 @@ module.exports = async (req, res) => {
             provider: provider,
             timestamp: new Date().toISOString()
         });
-
     } catch (error) {
-        console.error('❌ Chat error:', error);
-        res.status(500).json({
-            error: 'Failed to process message',
-            detail: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 };
 
 async function callDeepSeek(message, history) {
     const messages = [
-        { role: 'system', content: 'You are JARVIS, Tony Stark\'s AI assistant. Provide helpful responses with current knowledge.' },
+        { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses with current knowledge." },
         ...history.slice(-4),
         { role: 'user', content: message }
     ];
@@ -89,7 +79,7 @@ async function callDeepSeek(message, history) {
 
 async function callGroq(message, history) {
     const messages = [
-        { role: 'system', content: 'You are JARVIS, Tony Stark\'s AI assistant. Provide helpful responses.' },
+        { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses." },
         ...history.slice(-4),
         { role: 'user', content: message }
     ];
