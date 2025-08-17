@@ -1,22 +1,81 @@
 {
-    "name": "jarvis-ai-ultimate",
-    "version": "6.1.0",
-    "description": "JARVIS AI Ultimate - Real AI Responses Only",
-    "main": "index.html",
-    "scripts": {
-        "dev": "vercel dev",
-        "start": "vercel dev"
+  "name": "jarvis-ai-ultimate",
+  "version": "7.2.0",
+  "description": "JARVIS AI Ultimate v7.2 - Foundation Intelligence with Current Knowledge, Web Search, and Voice Capabilities",
+  "main": "main.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "start": "echo 'Use vercel dev for local development'",
+    "deploy": "vercel --prod",
+    "test": "echo 'No tests configured yet'"
+  },
+  "keywords": [
+    "ai",
+    "assistant", 
+    "jarvis",
+    "chatbot",
+    "deepseek",
+    "groq",
+    "web-search",
+    "voice-recognition",
+    "current-knowledge",
+    "foundation-intelligence"
+  ],
+  "author": "Jarvis-Initialized",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jarvis-Initialized/jarvis-ai-ultimate.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "vercel": {
+    "functions": {
+      "api/**/*.js": {
+        "runtime": "@vercel/node@3.0.7"
+      }
     },
-    "keywords": [
-        "jarvis",
-        "ai",
-        "groq",
-        "real-ai",
-        "no-fake-responses"
-    ],
-    "author": "JARVIS Developer",
-    "license": "MIT",
-    "engines": {
-        "node": ">=18.0.0"
+    "env": {
+      "DEEPSEEK_API_KEY": "@deepseek_api_key",
+      "GROQ_API_KEY": "@groq_api_key", 
+      "SERPER_API_KEY": "@serper_api_key",
+      "SERPSTACK_API_KEY": "@serpstack_api_key",
+      "DEEPAI_API_KEY": "@deepai_api_key"
     }
+  },
+  "changelog": {
+    "7.2.0": {
+      "date": "2025-08-17",
+      "features": [
+        "🧠 Added DeepSeek API for current knowledge (2024/2025)",
+        "🔍 Integrated Serper + Serpstack web search with smart fallbacks", 
+        "🎤 Enhanced voice input with Web Speech API",
+        "🔊 Fixed talk-back voice synthesis bug",
+        "📡 Smart API selector with automatic fallbacks",
+        "⚡ Improved performance and reliability",
+        "🎨 Enhanced UI with provider indicators"
+      ],
+      "fixes": [
+        "Voice synthesis not triggering on speaker button click",
+        "API failures causing complete system breakdown", 
+        "Missing error handling for API rate limits",
+        "UI responsiveness on mobile devices"
+      ]
+    },
+    "7.1.0": {
+      "date": "2025-08-16", 
+      "features": [
+        "Professional Perplexity-style UI",
+        "Fixed sidebar scrolling behavior",
+        "Groq API integration",
+        "Test generator functionality"
+      ]
+    }
+  }
 }
