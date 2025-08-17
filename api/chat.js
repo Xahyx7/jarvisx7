@@ -21,18 +21,33 @@ module.exports = async (req, res) => {
             return;
         }
 
+        console.log('💬 Processing message:', message.substring(0, 50) + '...');
+
         let response;
         let provider;
 
+        // Try DeepSeek first
         try {
+            console.log('🧠 Attempting DeepSeek API...');
             response = await callDeepSeek(message, history);
             provider = 'DeepSeek (Current Knowledge)';
-        } catch (e) {
+            console.log('✅ DeepSeek success');
+        } catch (deepSeekError) {
+            console.log('❌ DeepSeek failed:', deepSeekError.message);
+            
+            // Fallback to Groq
             try {
+                console.log('⚡ Attempting Groq fallback...');
                 response = await callGroq(message, history);
                 provider = 'Groq (Fallback)';
-            } catch (e) {
-                res.status(500).json({ error: 'Both DeepSeek and Groq APIs failed', detail: e.message });
+                console.log('✅ Groq success');
+            } catch (groqError) {
+                console.log('❌ Groq also failed:', groqError.message);
+                res.status(500).json({ 
+                    error: 'Both APIs failed', 
+                    deepseek_error: deepSeekError.message,
+                    groq_error: groqError.message
+                });
                 return;
             }
         }
@@ -42,7 +57,9 @@ module.exports = async (req, res) => {
             provider: provider,
             timestamp: new Date().toISOString()
         });
+
     } catch (error) {
+        console.error('💥 Chat handler error:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -53,6 +70,8 @@ async function callDeepSeek(message, history) {
         ...history.slice(-4),
         { role: 'user', content: message }
     ];
+
+    console.log('🔗 DeepSeek request with', messages.length, 'messages');
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -70,11 +89,17 @@ async function callDeepSeek(message, history) {
 
     if (!response.ok) {
         const errorText = await response.text();
+        console.log('🔴 DeepSeek HTTP error:', response.status, errorText);
         throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    
+    if (!data.choices || !data.choices[0] || !data.choices.message) {
+        throw new Error('Invalid DeepSeek response format');
+    }
+
+    return data.choices.message.content;
 }
 
 async function callGroq(message, history) {
@@ -83,6 +108,8 @@ async function callGroq(message, history) {
         ...history.slice(-4),
         { role: 'user', content: message }
     ];
+
+    console.log('🔗 Groq request with', messages.length, 'messages');
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -100,9 +127,15 @@ async function callGroq(message, history) {
 
     if (!response.ok) {
         const errorText = await response.text();
+        console.log('🔴 Groq HTTP error:', response.status, errorText);
         throw new Error(`Groq API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    
+    if (!data.choices || !data.choices[0] || !data.choices.message) {
+        throw new Error('Invalid Groq response format');
+    }
+
+    return data.choices.message.content;
 }
