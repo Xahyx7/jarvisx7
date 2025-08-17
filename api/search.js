@@ -12,60 +12,39 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { query, num = 5 } = req.body;
+        const { query } = req.body;
         
         if (!query) {
             return res.status(400).json({ error: 'Query is required' });
         }
 
-        console.log(`🔍 Searching for: ${query}`);
+        console.log(`🔍 Searching: ${query}`);
 
-        // Search API configurations with fallbacks
-        const searchApis = [
-            {
-                name: 'serper',
-                url: 'https://google.serper.dev/search',
-                key: process.env.SERPER_API_KEY,
-                headers: { 'X-API-KEY': process.env.SERPER_API_KEY }
-            },
-            {
-                name: 'serpstack',
-                url: `http://api.serpstack.com/search?access_key=${process.env.SERPSTACK_API_KEY}&query=${encodeURIComponent(query)}`,
-                key: process.env.SERPSTACK_API_KEY,
-                method: 'GET'
-            }
-        ];
+        let results;
+        let provider;
 
-        let lastError;
-
-        // Try each search API
-        for (const api of searchApis) {
+        try {
+            // Try Serper first
+            results = await callSerper(query);
+            provider = 'Serper';
+        } catch (serperError) {
+            console.log('❌ Serper failed, trying Serpstack...');
             try {
-                if (!api.key) {
-                    console.log(`⚠️ Missing API key for ${api.name}`);
-                    continue;
-                }
-
-                const result = await callSearchAPI(api, query, num);
-                
-                return res.status(200).json({
-                    results: result.results,
-                    query: query,
-                    provider: api.name,
-                    timestamp: new Date().toISOString()
-                });
-
-            } catch (error) {
-                console.log(`❌ ${api.name} search failed: ${error.message}`);
-                lastError = error;
-                continue;
+                results = await callSerpstack(query);
+                provider = 'Serpstack';
+            } catch (serpstackError) {
+                throw new Error(`Search failed: ${serperError.message}`);
             }
         }
 
-        throw new Error(`All search APIs failed. Last error: ${lastError?.message}`);
+        res.status(200).json({
+            results: results,
+            query: query,
+            provider: provider
+        });
 
     } catch (error) {
-        console.error('Search API error:', error);
+        console.error('❌ Search error:', error);
         res.status(500).json({
             error: 'Search failed',
             detail: error.message
@@ -73,52 +52,39 @@ module.exports = async (req, res) => {
     }
 };
 
-async function callSearchAPI(api, query, num) {
-    try {
-        let response;
-        
-        if (api.name === 'serper') {
-            response = await fetch(api.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...api.headers
-                },
-                body: JSON.stringify({
-                    q: query,
-                    num: num
-                })
-            });
-        } else {
-            response = await fetch(api.url);
-        }
+async function callSerper(query) {
+    const response = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-KEY': process.env.SERPER_API_KEY
+        },
+        body: JSON.stringify({ q: query, num: 5 })
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        // Format results consistently
-        let results = [];
-        
-        if (api.name === 'serper' && data.organic) {
-            results = data.organic.slice(0, num).map(item => ({
-                title: item.title,
-                snippet: item.snippet,
-                url: item.link
-            }));
-        } else if (api.name === 'serpstack' && data.organic_results) {
-            results = data.organic_results.slice(0, num).map(item => ({
-                title: item.title,
-                snippet: item.snippet,
-                url: item.url
-            }));
-        }
-
-        return { results };
-
-    } catch (error) {
-        throw new Error(`${api.name} API call failed: ${error.message}`);
+    if (!response.ok) {
+        throw new Error(`Serper error: ${response.status}`);
     }
+
+    const data = await response.json();
+    return data.organic?.slice(0, 3).map(item => ({
+        title: item.title,
+        snippet: item.snippet,
+        url: item.link
+    })) || [];
+}
+
+async function callSerpstack(query) {
+    const response = await fetch(`http://api.serpstack.com/search?access_key=${process.env.SERPSTACK_API_KEY}&query=${encodeURIComponent(query)}&num=5`);
+
+    if (!response.ok) {
+        throw new Error(`Serpstack error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.organic_results?.slice(0, 3).map(item => ({
+        title: item.title,
+        snippet: item.snippet,
+        url: item.url
+    })) || [];
 }
