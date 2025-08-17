@@ -1,7 +1,7 @@
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -13,75 +13,79 @@ module.exports = async (req, res) => {
 
     try {
         const { message, history = [] } = req.body;
-
-        if (!message) {
-            return res.status(400).json({ error: 'Message required' });
+        
+        if (!message || message.trim().length === 0) {
+            return res.status(400).json({ error: 'Message is required' });
         }
 
-        console.log(`🤖 Processing: ${message}`);
+        console.log(`💬 Processing message: ${message.substring(0, 50)}...`);
 
-        const apiKey = process.env.GROQ_API_KEY;
-        if (!apiKey) {
-            return res.status(503).json({ error: 'API key not configured' });
+        // Detect if this is a search query
+        const isSearchQuery = detectSearchIntent(message);
+        
+        if (isSearchQuery) {
+            // Handle search query
+            const searchResponse = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: message })
+            });
+
+            if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                
+                // Format search results for JARVIS response
+                const formattedResults = searchData.results.slice(0, 3).map((result, index) => 
+                    `${index + 1}. **${result.title}**\n   ${result.snippet}\n   🔗 ${result.url}`
+                ).join('\n\n');
+
+                const searchSummary = `🔍 Here's what I found about "${message}":\n\n${formattedResults}`;
+                
+                return res.status(200).json({
+                    response: searchSummary,
+                    provider: `Search via ${searchData.provider}`,
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
 
-        // EXACT same format that worked in Hoppscotch
-        const payload = {
-            model: "llama-3.3-70b-versatile",
-            messages: [
-                {
-                    role: "user",
-                    content: message
-                }
-            ],
-            max_tokens: 1000  // Reduced from 2000 to avoid limits
-        };
-
-        console.log('📡 Calling Groq API...');
-
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Route to AI selector for regular chat
+        const aiResponse = await fetch('/api/ai-selector', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task: 'chat',
+                message: message,
+                history: history
+            })
         });
 
-        console.log(`📊 Status: ${response.status}`);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Groq error:', errorText);
-            return res.status(response.status).json({
-                error: 'Groq API error',
-                detail: errorText
-            });
+        const result = await aiResponse.json();
+        
+        if (!aiResponse.ok) {
+            throw new Error(result.error || 'AI processing failed');
         }
 
-        const data = await response.json();
-        const aiMessage = data?.choices?.[0]?.message?.content;
-
-        if (!aiMessage) {
-            return res.status(502).json({
-                error: 'No AI response',
-                debug: data
-            });
-        }
-
-        console.log(`✅ Success: ${aiMessage.length} chars`);
-
-        return res.status(200).json({
-            response: aiMessage,
-            provider: 'Groq-Llama-3.3',
-            timestamp: new Date().toISOString()
-        });
+        res.status(200).json(result);
 
     } catch (error) {
-        console.error('💥 Error:', error);
-        return res.status(500).json({
-            error: 'Server error',
-            detail: error.message
+        console.error('Smart chat error:', error);
+        res.status(500).json({
+            error: 'Chat processing failed',
+            detail: error.message,
+            provider: 'Error Handler'
         });
     }
 };
+
+function detectSearchIntent(message) {
+    const searchKeywords = [
+        'search for', 'find information about', 'look up', 'what\'s happening',
+        'latest news', 'current events', 'recent', 'today', 'now', 'currently',
+        'what happened', 'news about', 'information on'
+    ];
+    
+    const messageLower = message.toLowerCase();
+    return searchKeywords.some(keyword => messageLower.includes(keyword)) ||
+           messageLower.includes('2024') || messageLower.includes('2025');
+}
