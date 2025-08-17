@@ -34,34 +34,5 @@
   "dependencies": {},
   "devDependencies": {
     "vercel": "^32.0.0"
-  },
-  "changelog": {
-    "7.2.0": {
-      "date": "2025-08-17",
-      "features": [
-        "🧠 Added DeepSeek API for current knowledge (2024/2025)",
-        "🔍 Integrated Serper + Serpstack web search with smart fallbacks", 
-        "🎤 Enhanced voice input with Web Speech API",
-        "🔊 Fixed talk-back voice synthesis bug",
-        "📡 Smart API selector with automatic fallbacks",
-        "⚡ Improved performance and reliability",
-        "🎨 Enhanced UI with provider indicators"
-      ],
-      "fixes": [
-        "Voice synthesis not triggering on speaker button click",
-        "API failures causing complete system breakdown", 
-        "Missing error handling for API rate limits",
-        "UI responsiveness on mobile devices"
-      ]
-    },
-    "7.1.0": {
-      "date": "2025-08-16", 
-      "features": [
-        "Professional Perplexity-style UI",
-        "Fixed sidebar scrolling behavior",
-        "Groq API integration",
-        "Test generator functionality"
-      ]
-    }
   }
 }
