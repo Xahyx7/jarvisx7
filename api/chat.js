@@ -68,6 +68,7 @@ module.exports = async (req, res) => {
             try {
                 console.log('⚡ Calling Groq chat API...');
                 const chatResponse = await callGroq(message, history);
+                console.log('✅ Groq chat success');
                 
                 return res.status(200).json({
                     response: chatResponse,
@@ -76,6 +77,7 @@ module.exports = async (req, res) => {
                 });
 
             } catch (groqError) {
+                console.error('❌ Groq chat failed:', groqError.message);
                 return res.status(500).json({
                     error: 'Chat failed',
                     detail: groqError.message
@@ -92,12 +94,16 @@ module.exports = async (req, res) => {
     }
 };
 
+// FIXED: Robust Groq function with better error checking
 async function callGroq(message, history) {
     const messages = [
         { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses." },
         ...history.slice(-4),
         { role: 'user', content: message }
     ];
+
+    console.log('🔗 Groq request with', messages.length, 'messages');
+    console.log('🔑 Using API key:', process.env.GROQ_API_KEY ? 'Present' : 'Missing');
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -113,17 +119,50 @@ async function callGroq(message, history) {
         })
     });
 
+    console.log('📡 Groq response status:', response.status);
+
     if (!response.ok) {
         const errorText = await response.text();
+        console.log('❌ Groq error response:', errorText);
         throw new Error(`Groq API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    if (!data.choices || !data.choices[0] || !data.choices.message) {
-        throw new Error('Invalid Groq response format');
+    console.log('📦 Groq response data keys:', Object.keys(data));
+    console.log('📦 Groq full response:', JSON.stringify(data, null, 2));
+
+    // Robust checking with detailed error messages
+    if (!data) {
+        throw new Error('Empty response from Groq API');
     }
 
-    return data.choices.message.content;
+    if (!data.choices) {
+        throw new Error('No "choices" field in Groq response. Available fields: ' + Object.keys(data).join(', '));
+    }
+
+    if (!Array.isArray(data.choices)) {
+        throw new Error('Groq "choices" field is not an array. Type: ' + typeof data.choices);
+    }
+
+    if (data.choices.length === 0) {
+        throw new Error('Empty choices array in Groq response');
+    }
+
+    const choice = data.choices[0];
+    if (!choice) {
+        throw new Error('First choice is null/undefined in Groq response');
+    }
+
+    if (!choice.message) {
+        throw new Error('No "message" field in first choice. Available fields: ' + Object.keys(choice).join(', '));
+    }
+
+    if (!choice.message.content) {
+        throw new Error('No "content" field in message. Available fields: ' + Object.keys(choice.message).join(', '));
+    }
+
+    console.log('✅ Groq response content length:', choice.message.content.length);
+    return choice.message.content;
 }
 
 async function callSerper(query) {
