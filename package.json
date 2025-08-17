@@ -1,11 +1,11 @@
 {
   "name": "jarvis-ai-ultimate",
   "version": "7.2.0",
-  "description": "JARVIS AI Ultimate v7.2 - Foundation Intelligence with Current Knowledge, Web Search, and Voice Capabilities",
+  "description": "JARVIS AI Ultimate v7.2 - Foundation Intelligence",
   "main": "main.html",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'Static site - no build needed'",
+    "build": "echo 'Static site ready for deployment'",
     "start": "echo 'Use vercel dev for local development'",
     "deploy": "vercel --prod",
     "test": "echo 'No tests configured yet'"
@@ -34,20 +34,6 @@
   "dependencies": {},
   "devDependencies": {
     "vercel": "^32.0.0"
-  },
-  "vercel": {
-    "functions": {
-      "api/**/*.js": {
-        "runtime": "@vercel/node@3.0.7"
-      }
-    },
-    "env": {
-      "DEEPSEEK_API_KEY": "@deepseek_api_key",
-      "GROQ_API_KEY": "@groq_api_key", 
-      "SERPER_API_KEY": "@serper_api_key",
-      "SERPSTACK_API_KEY": "@serpstack_api_key",
-      "DEEPAI_API_KEY": "@deepai_api_key"
-    }
   },
   "changelog": {
     "7.2.0": {
