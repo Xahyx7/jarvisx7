@@ -402,3 +402,148 @@ body {
     justify-content: center;
     font-size: 0.75rem;
 }
+/* v7.2 New Features Styling */
+
+/* Voice Controls in Sidebar */
+.voice-controls {
+    margin-top: auto;
+    padding-top: 2rem;
+    border-top: 1px solid #2a2a2a;
+}
+
+.voice-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+}
+
+.voice-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.voice-btn.active {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.voice-status {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+/* API Status Indicators in Top Bar */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.api-indicators {
+    display: flex;
+    gap: 1rem;
+}
+
+.api-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background-color: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.api-status.error {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Welcome Message Styling */
+.welcome-message .message-content {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+}
+
+.welcome-message ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.welcome-message li {
+    margin: 0.5rem 0;
+    color: #e2e8f0;
+}
+
+/* Enhanced Provider Info */
+.provider-info {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.provider-info small {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+/* Voice Input Visual Feedback */
+.message-input-listening {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* Enhanced Status Bar */
+.status-bar {
+    background: linear-gradient(90deg, #1a1a1a 0%, #2563eb 30%, #22c55e 70%, #1a1a1a 100%);
+    background-size: 300% 100%;
+    animation: statusFlow 5s ease-in-out infinite;
+}
+
+@keyframes statusFlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Responsive Updates */
+@media (max-width: 768px) {
+    .api-indicators {
+        display: none;
+    }
+    
+    .voice-controls {
+        padding-top: 1rem;
+    }
+    
+    .voice-btn {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
