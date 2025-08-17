@@ -4,36 +4,36 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.status(200).end();
+        return;
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
     }
 
     try {
         const { query } = req.body;
-        
-        if (!query) {
-            return res.status(400).json({ error: 'Query is required' });
-        }
 
-        console.log(`🔍 Searching: ${query}`);
+        if (!query) {
+            res.status(400).json({ error: 'Query is required' });
+            return;
+        }
 
         let results;
         let provider;
 
         try {
-            // Try Serper first
             results = await callSerper(query);
             provider = 'Serper';
-        } catch (serperError) {
-            console.log('❌ Serper failed, trying Serpstack...');
+        } catch (e) {
             try {
                 results = await callSerpstack(query);
                 provider = 'Serpstack';
-            } catch (serpstackError) {
-                throw new Error(`Search failed: ${serperError.message}`);
+            } catch (e) {
+                res.status(500).json({ error: 'Both Serper and Serpstack APIs failed', detail: e.message });
+                return;
             }
         }
 
@@ -42,13 +42,8 @@ module.exports = async (req, res) => {
             query: query,
             provider: provider
         });
-
     } catch (error) {
-        console.error('❌ Search error:', error);
-        res.status(500).json({
-            error: 'Search failed',
-            detail: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 };
 
