@@ -14,6 +14,13 @@ module.exports = (req, res) => {
         version: '7.2.1-foundation-intelligence',
         api_provider: 'Groq',
         api_configured: isConfigured,
-        groq_status: isConfigured ? 'Ready' : 'Missing Key'
+        groq_status: isConfigured ? 'Ready' : 'Missing Key',
+        endpoints: {
+            chat: '/api/chat',
+            health: '/api/health',
+            'image-pollination': '/api/image-pollination',
+            'image-huggingface': '/api/image-huggingface',
+            kroki: '/api/kroki'
+        }
     });
 };
