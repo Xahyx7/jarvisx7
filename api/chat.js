@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
         // Detect search queries if no task specified
         const isSearchQuery = task === 'search' || detectSearchIntent(message);
         const finalTask = task || (isSearchQuery ? 'search' : 'chat');
-        // Route directly instead of internal fetch
+
         if (finalTask === 'search') {
             let results, provider;
             try {
@@ -50,9 +50,14 @@ module.exports = async (req, res) => {
                 timestamp: new Date().toISOString()
             });
         } else {
-            // Handle chat directly
+            // Handle chat with sanitized messages
             try {
-                const chatResponse = await callGroq(message, history);
+                const sanitizedHistory = history.slice(-4).map(m => ({
+                    role: m.role,
+                    content: m.content
+                }));
+
+                const chatResponse = await callGroq(message, sanitizedHistory);
                 return res.status(200).json({
                     response: chatResponse,
                     provider: 'Groq (Primary)',
@@ -73,11 +78,10 @@ module.exports = async (req, res) => {
     }
 };
 
-// (Helper functions, unchanged from your original)
 async function callGroq(message, history) {
     const messages = [
         { role: 'system', content: "You are JARVIS, Tony Stark's AI assistant. Provide helpful responses." },
-        ...history.slice(-4),
+        ...history,
         { role: 'user', content: message }
     ];
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -104,6 +108,7 @@ async function callGroq(message, history) {
     }
     return data.choices.message.content;
 }
+
 async function callSerper(query) {
     const response = await fetch('https://google.serper.dev/search', {
         method: 'POST',
@@ -116,6 +121,7 @@ async function callSerper(query) {
         title: item.title, snippet: item.snippet, url: item.link
     })) || [];
 }
+
 async function callSerpstack(query) {
     const response = await fetch(`http://api.serpstack.com/search?access_key=${process.env.SERPSTACK_API_KEY}&query=${encodeURIComponent(query)}&num=5`);
     if (!response.ok) throw new Error(`Serpstack error: ${response.status}`);
@@ -124,6 +130,7 @@ async function callSerpstack(query) {
         title: item.title, snippet: item.snippet, url: item.url
     })) || [];
 }
+
 function detectSearchIntent(message) {
     const searchKeywords = [
         'search for', 'find information', 'look up', "what's happening",
