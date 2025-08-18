@@ -189,6 +189,7 @@ class JarvisAIUltimate {
         this.elements.messageInput.placeholder = placeholder;
     }
 
+    // FIXED: Process user message with proper image handling
     async processUserMessage() {
         if (this.isProcessing) return;
 
@@ -211,16 +212,20 @@ class JarvisAIUltimate {
         this.updateSystemStatus(`Processing in ${this.currentMode} mode...`, "Please wait");
 
         try {
-            this.conversationHistory.push({ role: 'user', content: message, timestamp: Date.now() });
-            if (this.conversationHistory.length > 20) {
-                this.conversationHistory = this.conversationHistory.slice(-10);
-            }
-
             const response = await this.getResponseBasedOnMode(message);
-            this.conversationHistory.push({ role: 'assistant', content: response.text, timestamp: Date.now() });
 
             this.hideTypingIndicator();
-            this.addMessage(response.text, 'jarvis', true, response.provider);
+
+            // 🔥 FIXED: Proper image display handling
+            if (response.output_url) {
+                // Show image directly in chat
+                const imgTag = `<img src="${response.output_url}" style="max-width: 100%; border-radius: 1rem;" />`;
+                this.addMessage(imgTag, 'jarvis', false, response.provider);
+            } else {
+                // Show text response
+                this.addMessage(response.response || response.text, 'jarvis', true, response.provider);
+            }
+
             this.updateSystemStatus("Response complete", `via ${response.provider}`);
 
         } catch (error) {
@@ -281,26 +286,14 @@ class JarvisAIUltimate {
                 throw new Error('No response from API');
             }
 
-            // Handle different response types
-            if (data.output_url) {
-                // Image response
-                return {
-                    text: `🎨 Image generated successfully!\n\n![Generated Image](${data.output_url})`,
-                    provider: data.provider || 'Image Generator'
-                };
-            } else {
-                // Chat/Search response
-                return {
-                    text: data.response,
-                    provider: data.provider || 'Unknown'
-                };
-            }
+            return data;
 
         } catch (error) {
             throw new Error(`${this.currentMode} processing failed: ${error.message}`);
         }
     }
 
+    // ENHANCED: Add message with proper image handling
     addMessage(content, sender, withSpeaker = false, provider = '') {
         const messagesContainer = this.elements.messagesContainer;
         const messageDiv = document.createElement('div');
@@ -311,7 +304,12 @@ class JarvisAIUltimate {
         if (sender === 'user') {
             messageContent.textContent = content;
         } else {
-            messageContent.innerHTML = content;
+            // 🔥 FIXED: Proper HTML rendering for images
+            if (content.startsWith('<img')) {
+                messageContent.innerHTML = content;
+            } else {
+                messageContent.innerHTML = content;
+            }
             
             if (provider) {
                 const providerInfo = document.createElement('div');
