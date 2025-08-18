@@ -15,11 +15,13 @@ module.exports = async (req, res) => {
 
         console.log(`🤖 Hugging Face image request: ${message}`);
 
-        const response = await fetch('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1', {
+        // FIXED: Added proper Accept header for image response
+        const response = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'image/png'  // 🔥 THIS IS THE FIX!
             },
             body: JSON.stringify({
                 inputs: message,
@@ -32,17 +34,20 @@ module.exports = async (req, res) => {
 
         if (!response.ok) {
             const errorText = await response.text();
+            console.log('❌ Hugging Face error response:', errorText);
             throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
         }
 
-        // Hugging Face returns binary image data
+        // Handle binary image response
         const imageBuffer = await response.arrayBuffer();
         const base64Image = Buffer.from(imageBuffer).toString('base64');
         const imageUrl = `data:image/png;base64,${base64Image}`;
         
+        console.log('✅ Hugging Face image generated successfully');
+        
         res.status(200).json({
             output_url: imageUrl,
-            provider: 'Hugging Face (Stable Diffusion 2.1)',
+            provider: 'Hugging Face (FLUX.1)',
             prompt: message
         });
         
