@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
                 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'gpt-oss-120B', // Latest OpenAI open model - best performance
+                model: 'llama-3.1-70b-versatile', // GUARANTEED FREE MODEL
                 messages,
                 max_tokens: 500,
                 temperature: 0.7
@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
         
         res.status(200).json({
             response: data.choices.message.content,
-            provider: "Groq (gpt-oss-120B)",
+            provider: "Groq (llama-3.1-70b)",
             timestamp: new Date().toISOString()
         });
         
