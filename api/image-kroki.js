@@ -2,6 +2,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     
@@ -16,26 +17,30 @@ module.exports = async (req, res) => {
         
         // Generate proper PlantUML syntax
         const plantUMLCode = textToPlantUML(message);
-        console.log('Generated PlantUML:', plantUMLCode);
+        console.log('Generated PlantUML:', plantUMLCode.substring(0, 100) + '...');
         
-        // Use correct Kroki API endpoint
-        const response = await fetch('https://kroki.io/plantuml/png', {
-            method: 'POST',
+        // Use Kroki API with proper base64 encoding
+        const encodedDiagram = Buffer.from(plantUMLCode).toString('base64');
+        const krokyUrl = `https://kroki.io/plantuml/png/${encodedDiagram}`;
+        
+        // Test the Kroki endpoint
+        const response = await fetch(krokyUrl, {
+            method: 'GET',
             headers: {
-                'Content-Type': 'text/plain'
-            },
-            body: plantUMLCode
+                'Accept': 'image/png'
+            }
         });
         
         if (!response.ok) {
-            throw new Error(`Kroki API error: ${response.status}`);
+            throw new Error(`Kroki API error: ${response.status} ${response.statusText}`);
         }
         
+        // Convert to base64 data URL for embedding
         const imageBuffer = await response.arrayBuffer();
         const base64Image = Buffer.from(imageBuffer).toString('base64');
         const dataUrl = `data:image/png;base64,${base64Image}`;
         
-        console.log(`✅ Kroki diagram generated`);
+        console.log(`✅ Kroki diagram generated successfully`);
         
         res.status(200).json({
             output_url: dataUrl,
@@ -57,52 +62,71 @@ function textToPlantUML(text) {
     
     if (textLower.includes('flowchart') || textLower.includes('process') || textLower.includes('workflow')) {
         return `@startuml
+!theme plain
 skinparam backgroundColor #FEFEFE
 skinparam activity {
   BackgroundColor #E1F5FE
   BorderColor #0288D1
+  FontColor #01579B
 }
+title ${text.substring(0, 50)}
 start
-:${text.substring(0, 100)};
-:Step 1: Initialize;
-:Step 2: Process;
-:Step 3: Complete;
+:Initialize Process;
+:Execute Main Logic;
+:Validate Results;
+:Complete Task;
 stop
 @enduml`;
-    } else if (textLower.includes('sequence') || textLower.includes('interaction')) {
+    } 
+    
+    else if (textLower.includes('sequence') || textLower.includes('interaction')) {
         return `@startuml
+!theme plain
 skinparam backgroundColor #FEFEFE
+title ${text.substring(0, 50)}
 participant User
 participant System
 participant Database
-User -> System: ${text.substring(0, 50)}
+User -> System: Request
 activate System
-System -> Database: Query
+System -> Database: Query Data
 activate Database
-Database --> System: Result
+Database --> System: Return Data
 deactivate Database
 System --> User: Response
 deactivate System
 @enduml`;
-    } else if (textLower.includes('class') || textLower.includes('object')) {
+    } 
+    
+    else if (textLower.includes('class') || textLower.includes('object') || textLower.includes('uml')) {
         return `@startuml
+!theme plain
 skinparam backgroundColor #FEFEFE
+title ${text.substring(0, 50)}
 class MainClass {
-  +property1
-  +property2
-  +method1()
-  +method2()
+  +property1: String
+  +property2: Integer
+  +method1(): void
+  +method2(): Boolean
 }
-note top : ${text.substring(0, 80)}
+class SubClass {
+  +subProperty: String
+  +subMethod(): void
+}
+MainClass --> SubClass
 @enduml`;
-    } else {
+    } 
+    
+    else {
         return `@startuml
+!theme plain
 skinparam backgroundColor #FEFEFE
 note as N1 #E8F5E8
-  <b>${text.substring(0, 100)}</b>
+  <b>Generated Diagram</b>
   ----
-  Generated diagram
-  from description
+  ${text.substring(0, 100)}
+  ----
+  <i>Created with JARVIS AI</i>
 end note
 @enduml`;
     }
