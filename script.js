@@ -3,57 +3,150 @@ class JarvisAIUltimate {
         this.version = "JARVIS-Ultimate-v7.2.1-FoundationIntelligence";
         this.isProcessing = false;
         this.conversationHistory = this.loadConversationHistory();
-        this.maxRetries = 3;
-        this.retryDelay = 1000;
-        this.recognition = null;
-        this.currentMode = 'chat';
+        this.currentMode = 'chat';         // chat | search | image
         this.currentImageAPI = 'pollinations';
-        this.synthesis = null;
-        this.initialize();
+        this.synthesis = window.speechSynthesis || null;
+        this.recognition = null;
+        this.init();
     }
-    async initialize() {
+
+    async init() {
         await this.waitForDOM();
-        this.initializeUIElements();
-        this.setupEventListeners();
-        this.setupModeSelection();
-        this.setupImageApiSelector();
-        this.initializeVoiceSystem();
-        this.initializeSpeechRecognition();
-        this.updateSystemStatus("JARVIS v7.2.1 Online", "Foundation Intelligence Ready");
+        this.cacheUI();
         this.renderAllMessages();
+        this.setupSidebarNavigation();
+        this.setupImageApiSelector();
+        this.setupFormEvents();
+        this.setupVoice();
+        this.updateInputPlaceholder();
+        this.updateApiStatus("🧠 Groq ready");
+        this.showStatus("Ready");
     }
+
+    // --- UI Caching/Helpers ---
     async waitForDOM() {
-        if (document.readyState === 'loading') {
-            return new Promise(resolve => {
-                document.addEventListener('DOMContentLoaded', resolve);
-            });
+        if (document.readyState === "loading") {
+            return new Promise(res => document.addEventListener("DOMContentLoaded", res));
         }
     }
-    initializeUIElements() {
-        this.elements = {
-            messagesContainer: document.getElementById('messagesContainer'),
+    cacheUI() {
+        this.$ = {
+            messages: document.getElementById('messagesContainer'),
             messageInput: document.getElementById('messageInput'),
             messageForm: document.getElementById('messageForm'),
             sendBtn: document.getElementById('sendBtn'),
             typingIndicator: document.getElementById('typingIndicator'),
-            statusText: document.getElementById('statusText'),
-            apiStatus: document.getElementById('apiStatus')
+            apiSelector: document.getElementById('image-api-selector'),
+            apiStatus: document.getElementById('apiStatus'),
+            sidebar: document.querySelector('.sidebar-menu'),
+            statusBar: document.getElementById('statusText'),
+            clearBtn: document.getElementById('clearHistoryBtn')
         };
     }
-    setupEventListeners() {
-        this.elements.messageForm.addEventListener('submit', (e) => {
+
+    // --- Sidebar mode switching ---
+    setupSidebarNavigation() {
+        const items = document.querySelectorAll('.menu-item');
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                items.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                const mode = item.getAttribute('data-mode');
+                if (!mode) return;
+                this.switchMode(mode);
+            });
+        });
+        items.forEach(item => {
+            item.addEventListener('keyup', (e) => {
+                if (e.key === "Enter" || e.key === " ") item.click();
+            });
+        });
+    }
+    switchMode(mode) {
+        this.currentMode = mode;
+        switch (mode) {
+            case 'chat':
+                this.hideImageApiSelector();
+                this.showStatus("Chat Ready");
+                this.updateApiStatus("🧠 Groq ready");
+                break;
+            case 'search':
+                this.hideImageApiSelector();
+                this.showStatus("Web Search Ready");
+                this.updateApiStatus("🔍 Serper ready");
+                break;
+            case 'image':
+                this.showImageApiSelector();
+                this.showStatus("Image Generator Ready");
+                this.updateApiStatus("🎨 Pollinations");
+                this.addMessage(
+                    "🎨 <strong>Image Mode Activated!</strong><br>Pick a style above and type what to generate.",
+                    'jarvis', false, ''
+                );
+                break;
+            default:
+                this.hideImageApiSelector();
+                this.showStatus(`Mode: ${mode}`);
+                this.updateApiStatus('');
+        }
+        this.updateInputPlaceholder();
+    }
+
+    // --- Image API selector ---
+    setupImageApiSelector() {
+        const btns = document.querySelectorAll('#image-api-selector .api-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                btns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.currentImageAPI = btn.getAttribute('data-api');
+                this.updateApiStatus(`🎨 ${btn.textContent.trim()}`);
+                this.addMessage(`🎨 Image API: ${this.currentImageAPI}`, 'jarvis');
+                this.updateInputPlaceholder();
+            });
+        });
+    }
+    showImageApiSelector() { this.$.apiSelector.style.display = 'flex'; }
+    hideImageApiSelector() { this.$.apiSelector.style.display = 'none'; }
+
+    // --- Persistent Conversation History ---
+    loadConversationHistory() {
+        const saved = localStorage.getItem('jarvis_history');
+        return saved ? JSON.parse(saved) : [];
+    }
+    saveConversationHistory() {
+        localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
+    }
+    clearConversationHistory() {
+        if (!confirm("Clear your entire conversation history?")) return;
+        this.conversationHistory = [];
+        localStorage.removeItem('jarvis_history');
+        this.renderAllMessages();
+        this.showStatus("Chat cleared.");
+    }
+    renderAllMessages() {
+        if (!this.$?.messages) return;
+        this.$.messages.innerHTML = '';
+        for (const msg of this.conversationHistory) {
+            this.renderMessage(msg.content, msg.role, false, msg.provider);
+        }
+    }
+
+    // --- Form and message handling ---
+    setupFormEvents() {
+        this.$.messageForm.addEventListener('submit', e => {
             e.preventDefault();
             this.processUserMessage();
         });
-        this.elements.sendBtn.addEventListener('click', (e) => {
+        this.$.sendBtn.addEventListener('click', e => {
             e.preventDefault();
             this.processUserMessage();
         });
-        this.elements.messageInput.addEventListener('input', () => {
-            this.autoResizeTextarea();
+        this.$.messageInput.addEventListener('input', () => {
             this.updateSendButton();
+            this.autoResizeTextarea();
         });
-        this.elements.messageInput.addEventListener('keydown', (e) => {
+        this.$.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.processUserMessage();
@@ -63,38 +156,30 @@ class JarvisAIUltimate {
                 this.startVoiceRecognition();
             }
         });
+        this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
+    }
 
-        // Clear conversation history (privacy)
-        const clearBtn = document.getElementById('clearHistoryBtn');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                if (confirm('Clear your conversation history?')) {
-                    this.clearConversationHistory();
-                }
-            });
-        }
+    showTypingIndicator() {
+        this.$.typingIndicator.style.display = 'flex';
+        this.scrollToBottom();
     }
-    loadConversationHistory() {
-        const saved = localStorage.getItem('jarvis_history');
-        return saved ? JSON.parse(saved) : [];
+    hideTypingIndicator() {
+        this.$.typingIndicator.style.display = 'none';
     }
-    saveConversationHistory() {
-        localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
+    scrollToBottom() {
+        setTimeout(() => {
+            if (this.$.messages) this.$.messages.scrollTop = this.$.messages.scrollHeight;
+        }, 80);
     }
-    clearConversationHistory() {
-        this.conversationHistory = [];
-        localStorage.removeItem('jarvis_history');
-        this.renderAllMessages();
-    }
-    renderAllMessages() {
-        if (!this.elements?.messagesContainer) return;
-        this.elements.messagesContainer.innerHTML = '';
-        for (const msg of this.conversationHistory) {
-            this.renderMessage(msg.content, msg.role, false, msg.provider);
-        }
+
+    // --- Add messages to DOM/history ---
+    addMessage(content, sender, withSpeaker = false, provider = '') {
+        this.conversationHistory.push({ role: sender === 'user' ? 'user' : 'assistant', content, provider });
+        this.saveConversationHistory();
+        this.renderMessage(content, sender, withSpeaker, provider);
     }
     renderMessage(content, sender, withSpeaker = false, provider = '') {
-        const messagesContainer = this.elements.messagesContainer;
+        const messagesContainer = this.$.messages;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'jarvis-message'}`;
         const messageContent = document.createElement('div');
@@ -102,88 +187,165 @@ class JarvisAIUltimate {
         if (sender === 'user') {
             messageContent.textContent = content;
         } else {
-            if (content.startsWith('<img')) messageContent.innerHTML = content;
-            else messageContent.innerHTML = content;
+            messageContent.innerHTML = content;
             if (provider) {
                 const providerInfo = document.createElement('div');
                 providerInfo.className = 'provider-info';
-                providerInfo.innerHTML = `<small>Provider: ${provider}</small>`;
+                providerInfo.textContent = `Provider: ${provider}`;
                 messageDiv.appendChild(providerInfo);
             }
             if (withSpeaker) {
-                const speakerIcon = document.createElement('button');
-                speakerIcon.className = 'speaker-icon';
-                speakerIcon.textContent = '🔊 Speak';
-                speakerIcon.title = 'Click to hear response';
-                speakerIcon.onclick = (e) => {
+                const speakerBtn = document.createElement('button');
+                speakerBtn.className = 'speaker-icon';
+                speakerBtn.textContent = '🔊 Speak';
+                speakerBtn.title = 'Speak response';
+                speakerBtn.onclick = (e) => {
                     e.preventDefault();
                     this.speakText(content);
                 };
-                messageDiv.appendChild(speakerIcon);
+                messageDiv.appendChild(speakerBtn);
             }
         }
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
-        setTimeout(() => {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 100);
+        this.scrollToBottom();
     }
-    addMessage(content, sender, withSpeaker = false, provider = '') {
-        this.conversationHistory.push({
-            role: sender === 'user' ? 'user' : 'assistant',
-            content,
-            provider
-        });
-        this.saveConversationHistory();
-        this.renderMessage(content, sender, withSpeaker, provider);
-    }
+
+    // --- Main message sending logic, context-aware ---
     async processUserMessage() {
         if (this.isProcessing) return;
-        let message = this.elements.messageInput.value.trim();
+        let message = this.$.messageInput.value.trim();
         if (!message) return;
         this.isProcessing = true;
         setTimeout(() => {
-            this.elements.messageInput.value = '';
-            this.elements.messageInput.style.height = '54px';
+            this.$.messageInput.value = '';
+            this.$.messageInput.style.height = '54px';
             this.updateSendButton();
-        }, 100);
+        }, 80);
 
-        // Context-aware follow-ups
+        // Contextual follow-up
         if (/^(explain again|expand|repeat|elaborate|clarify|explain more)$/i.test(message)) {
             const lastBotMsg = [...this.conversationHistory].reverse().find(m => m.role === 'assistant' && m.content);
-            if (lastBotMsg) {
-                message += `\n\n(REFERENCE:${lastBotMsg.content})`;
-            }
+            if (lastBotMsg) message += `\n\n(REFERENCE:${lastBotMsg.content})`;
         }
+
         this.addMessage(message, 'user');
         this.showTypingIndicator();
-        this.updateSystemStatus(`Processing in ${this.currentMode} mode...`, "Please wait");
+        this.showStatus(`Processing in ${this.currentMode} mode...`);
         try {
             const response = await this.getResponseBasedOnMode(message);
             this.hideTypingIndicator();
             if (response.output_url) {
-                const imgTag = `<img src="${response.output_url}" style="max-width: 100%; border-radius: 1rem;" />`;
-                this.addMessage(imgTag, 'jarvis', false, response.provider);
+                this.addMessage(`<img src="${response.output_url}" style="max-width:100%;border-radius:1rem;"/>`, 'jarvis', false, response.provider);
             } else {
                 this.addMessage(response.response || response.text, 'jarvis', true, response.provider);
             }
-            this.updateSystemStatus("Response complete", `via ${response.provider}`);
+            this.showStatus(`Response complete`);
         } catch (error) {
             this.hideTypingIndicator();
             this.addMessage(`Error: ${error.message}`, 'jarvis');
-            this.updateSystemStatus("Error", error.message);
+            this.showStatus("Error");
         } finally {
             this.isProcessing = false;
             this.updateSendButton();
-            setTimeout(() => { this.elements.messageInput.focus(); }, 100);
+            setTimeout(() => this.$.messageInput.focus(), 60);
         }
     }
-    // ... all your other methods from v7.2 here (unchanged unless you want more) ...
+
+    // --- API Call Routing ---
+    async getResponseBasedOnMode(message) {
+        let endpoint, task;
+        if (this.currentMode === 'chat') { endpoint = '/api/chat'; task = 'chat'; }
+        else if (this.currentMode === 'search') { endpoint = '/api/chat'; task = 'search'; }
+        else if (this.currentMode === 'image') {
+            task = 'image';
+            if (this.currentImageAPI === 'huggingface')
+                endpoint = '/api/image-huggingface';
+            else if (this.currentImageAPI === 'kroki')
+                endpoint = '/api/kroki';
+            else
+                endpoint = '/api/image-pollination';
+        } else { endpoint = '/api/chat'; task = 'chat'; }
+        const payload = {
+            message: message,
+            history: this.conversationHistory.slice(-6),
+            task: task
+        };
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
+        return await response.json();
+    }
+
+    // --- Voice (Speech, Recognition) ---
+    setupVoice() {
+        if (this.synthesis) this.synthesis.onvoiceschanged = () => null;
+        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRec();
+            this.recognition.lang = "en-US";
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            this.recognition.onstart = () => this.showStatus("Listening... Speak now");
+            this.recognition.onresult = (e) => {
+                const transcript = e.results[0].transcript;
+                this.$.messageInput.value = transcript;
+                this.updateSendButton();
+                this.$.messageInput.focus();
+            };
+            this.recognition.onerror = () => this.showStatus('Speech recognition error');
+            this.recognition.onend = () => this.showStatus('Ready');
+        }
+    }
+    startVoiceRecognition() { if (this.recognition) this.recognition.start(); }
+    speakText(text) {
+        if (!this.synthesis) return;
+        const cleanText = text.replace(/<[^>]*>/g, '').substring(0, 350);
+        if (cleanText.length < 5) return;
+        this.synthesis.cancel();
+        setTimeout(() => {
+            const utter = new SpeechSynthesisUtterance(cleanText);
+            utter.rate = 0.95; utter.volume = 0.83;
+            this.synthesis.speak(utter);
+        }, 70);
+    }
+
+    // --- UI helpers ---
+    autoResizeTextarea() {
+        const area = this.$.messageInput;
+        area.style.height = 'auto';
+        area.style.height = Math.min(area.scrollHeight, 140) + 'px';
+    }
+    updateSendButton() {
+        const hasText = this.$.messageInput.value.trim().length > 0;
+        this.$.sendBtn.disabled = !hasText || this.isProcessing;
+        this.$.sendBtn.textContent = this.isProcessing ? "Sending..." : "Send";
+    }
+    updateInputPlaceholder() {
+        let p = "";
+        if (this.currentMode === 'search') p = "What do you want to know from the web?";
+        else if (this.currentMode === 'image') {
+            if (this.currentImageAPI === 'kroki') p = "Describe a diagram (eg: flowchart for login)";
+            else if (this.currentImageAPI === 'huggingface') p = "Describe an image or diagram idea...";
+            else p = "What image would you like to generate?";
+        }
+        else p = "Ask JARVIS anything or chat... (Ctrl+Space for voice)";
+        this.$.messageInput.placeholder = p;
+    }
+    updateApiStatus(status) { this.$.apiStatus && (this.$.apiStatus.textContent = status); }
+    showStatus(text) { this.$.statusBar && (this.$.statusBar.textContent = text); }
 }
+
+// --- Initialize singleton ---
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.jarvis = new JarvisAIUltimate();
-    });
+    document.addEventListener('DOMContentLoaded', () => window.jarvis = new JarvisAIUltimate());
 } else {
     window.jarvis = new JarvisAIUltimate();
 }
+console.log("🤖 JARVIS AI v7.2.1 Foundation Intelligence loaded and ready");
