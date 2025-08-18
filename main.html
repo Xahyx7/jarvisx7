@@ -1,97 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JARVIS AI Ultimate v7.2 - Foundation Intelligence</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JARVIS AI Ultimate v7.2 - Foundation Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <div class="jarvis-logo">J</div>
-                <div class="jarvis-title">JARVIS v7.2</div>
-            </div>
-            <div class="sidebar-menu">
-                <div class="menu-item active">💬 Chat</div>
-                <div class="menu-item">📝 Test Generator</div>
-                <div class="menu-item">🔍 Web Search</div>
-                <div class="menu-item">🎨 Image Generator</div>
-                <div class="menu-item">⚙️ Settings</div>
-                <div class="menu-item">📊 Analytics</div>
-                <div class="menu-item">❓ Help</div>
-            </div>
-        </div>
-
-        <!-- Main Chat Area -->
-        <div class="main-area">
-            <div class="top-bar">
-                <span>JARVIS AI Ultimate v7.2 - Foundation Intelligence</span>
-                <div class="api-indicators">
-                    <span id="primaryApiStatus" class="api-status">🧠 DeepSeek</span>
-                    <span id="fallbackApiStatus" class="api-status">⚡ Groq</span>
-                    <span id="searchApiStatus" class="api-status">🔍 Search</span>
-                </div>
-            </div>
-
-            <div class="chat-container">
-                <div id="messagesContainer" class="chat-messages">
-                    <!-- Welcome message -->
-                    <div class="message jarvis-message welcome-message">
-                        <div class="message-content">
-                            <h3>🤖 Welcome to JARVIS v7.2 Foundation Intelligence!</h3>
-                            <p>New capabilities in this version:</p>
-                            <ul>
-                                <li>🧠 <strong>Current Knowledge</strong> - DeepSeek AI with 2024/2025 data</li>
-                                <li>🔍 <strong>Web Search</strong> - Real-time information via Serper</li>
-                                <li>🎤 <strong>Voice Input</strong> - Press Ctrl+Space or use voice commands</li>
-                                <li>🔊 <strong>Fixed Talk-back</strong> - Click speaker icons to hear responses</li>
-                                <li>⚡ <strong>Smart Fallbacks</strong> - Automatic backup APIs</li>
-                            </ul>
-                            <p>How can I assist you today?</p>
-                        </div>
-                        <div class="provider-info">
-                            <small>📡 JARVIS System</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="typingIndicator" class="typing-indicator" style="display: none;">
-                    <span>JARVIS is thinking</span>
-                    <div class="typing-dots">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                </div>
-
-                <div class="input-container">
-                    <form id="messageForm" class="input-wrapper">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Message JARVIS... (Ctrl+Space for voice)" 
-                            rows="1"
-                            autocomplete="off"
-                        ></textarea>
-                        <button type="submit" id="sendBtn" disabled>Send</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="status-bar">
-                <span id="statusText">JARVIS v7.2 Ready</span>
-                <span>•</span>
-                <span id="apiStatus">Foundation Intelligence Active</span>
-                <span>•</span>
-                <span id="versionInfo">Build 2025.08.17</span>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+<div class="app-container">
+<!-- Sidebar -->
+<div class="sidebar">
+<div class="sidebar-header">
+<div class="jarvis-logo">J</div>
+<div class="jarvis-title">JARVIS v7.2</div>
+</div>
+<div class="sidebar-menu">
+<div class="menu-item active" data-mode="chat">💬 Chat</div>
+<div class="menu-item" data-mode="search">🔍 Web Search</div>
+<div class="menu-item" data-mode="image">🎨 Image Generator</div>
+<div class="menu-item">⚙️ Settings</div>
+<div class="menu-item">📊 Analytics</div>
+<div class="menu-item">❓ Help</div>
+</div>
+</div>
+<!-- Main Chat Area -->
+<div class="main-area">
+<div class="top-bar">
+<span>JARVIS AI Ultimate v7.2 - Foundation Intelligence</span>
+<div class="api-indicators">
+<span id="primaryApiStatus" class="api-status">🧠 Groq</span>
+<span id="fallbackApiStatus" class="api-status">⚡ Backup</span>
+<span id="searchApiStatus" class="api-status">🔍 Search</span>
+</div>
+</div>
+<!-- Image API Selector - shows only in Image Mode -->
+<div id="image-api-selector" style="display: none; padding: 0.75rem 1.5rem; background: #161616; border-bottom: 1px solid #2a2a2a; gap: 1rem; justify-content: center;">
+<button data-api="pollinations" class="api-btn active">🎨 Pollinations</button>
+<button data-api="huggingface" class="api-btn">🤖 Hugging Face</button>
+<button data-api="kroki" class="api-btn">📊 Kroki (Diagrams)</button>
+</div>
+<div class="chat-container">
+<div id="messagesContainer" class="chat-messages">
+<!-- Welcome message -->
+<div class="message jarvis-message welcome-message">
+<div class="message-content">
+<h3>🤖 Welcome to JARVIS v7.2 Foundation Intelligence!</h3>
+<p>New capabilities in this version:</p>
+<ul>
+<li>🧠 <strong>Current Knowledge</strong> - Groq AI chat</li>
+<li>🔍 <strong>Web Search</strong> - Serper with fallback</li>
+<li>🎤 <strong>Voice Input</strong> - Voice commands and speech recognition</li>
+<li>🔊 <strong>Talk-back</strong> - Read responses aloud to you</li>
+<li>⚡ <strong>Smart Fallbacks</strong> - Robust handling of failures</li>
+<li>🎨 <strong>Multi-Style Image Gen</strong> - Pollinations, Hugging Face, Kroki</li>
+</ul>
+<p>How can I assist you today?</p>
+</div>
+<div class="provider-info">
+<small>📡 JARVIS System</small>
+</div>
+</div>
+</div>
+<div id="typingIndicator" class="typing-indicator" style="display: none;">
+<span>JARVIS is thinking</span>
+<div class="typing-dots">
+<div class="typing-dot"></div>
+<div class="typing-dot"></div>
+<div class="typing-dot"></div>
+</div>
+</div>
+<div class="input-container">
+<form id="messageForm" class="input-wrapper">
+<textarea 
+ id="messageInput" 
+ placeholder="Message JARVIS... (Ctrl+Space for voice)" 
+ rows="1"
+ autocomplete="off"
+></textarea>
+<button type="submit" id="sendBtn" disabled>Send</button>
+</form>
+</div>
+</div>
+<div class="status-bar">
+<span id="statusText">JARVIS v7.2 Ready</span>
+<span>•</span>
+<span id="apiStatus">Foundation Intelligence Active</span>
+<span>•</span>
+<span id="versionInfo">Build 2025.08.18</span>
+</div>
+</div>
+</div>
+<script src="script.js"></script>
 </body>
 </html>
