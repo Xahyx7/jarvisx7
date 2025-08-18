@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v7.2.1-FoundationIntelligence";
+        this.version = "JARVIS-Ultimate-v7.2.1-Fixed";
         this.isProcessing = false;
         this.conversationHistory = this.loadConversationHistory();
         this.currentMode = 'chat';
@@ -9,6 +9,7 @@ class JarvisAIUltimate {
         this.recognition = null;
         this.init();
     }
+
     async init() {
         await this.waitForDOM();
         this.cacheUI();
@@ -21,11 +22,13 @@ class JarvisAIUltimate {
         this.updateApiStatus("🧠 Groq ready");
         this.showStatus("Ready");
     }
+
     async waitForDOM() {
         if (document.readyState === "loading") {
             return new Promise(res => document.addEventListener("DOMContentLoaded", res));
         }
     }
+
     cacheUI() {
         this.$ = {
             messages: document.getElementById('messagesContainer'),
@@ -40,6 +43,7 @@ class JarvisAIUltimate {
             clearBtn: document.getElementById('clearHistoryBtn')
         };
     }
+
     setupSidebarNavigation() {
         const items = document.querySelectorAll('.menu-item');
         items.forEach(item => {
@@ -57,6 +61,7 @@ class JarvisAIUltimate {
             });
         });
     }
+
     switchMode(mode) {
         this.currentMode = mode;
         switch (mode) {
@@ -73,9 +78,8 @@ class JarvisAIUltimate {
             case 'image':
                 this.showImageApiSelector();
                 this.showStatus("Image Generator Ready");
-                this.updateApiStatus("Pollinations");
-                this.addMessage("Image Mode Activated! Pick a style above and type what to generate.",
-                    'jarvis', false, '');
+                this.updateApiStatus("🎨 Pollinations");
+                this.addMessage("🎨 Image Mode Activated! Pick a style above and type what to generate.", 'jarvis', false, '');
                 break;
             default:
                 this.hideImageApiSelector();
@@ -84,6 +88,7 @@ class JarvisAIUltimate {
         }
         this.updateInputPlaceholder();
     }
+
     setupImageApiSelector() {
         const btns = document.querySelectorAll('#image-api-selector .api-btn');
         btns.forEach(btn => {
@@ -91,21 +96,25 @@ class JarvisAIUltimate {
                 btns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.currentImageAPI = btn.getAttribute('data-api');
-                this.updateApiStatus(`${btn.textContent.trim()}`);
-                this.addMessage(`Image API: ${this.currentImageAPI}`, 'jarvis');
+                this.updateApiStatus(`🎨 ${btn.textContent.trim()}`);
+                this.addMessage(`🎨 Image API: ${this.currentImageAPI}`, 'jarvis');
                 this.updateInputPlaceholder();
             });
         });
     }
+
     showImageApiSelector() { this.$.apiSelector.style.display = 'flex'; }
     hideImageApiSelector() { this.$.apiSelector.style.display = 'none'; }
+
     loadConversationHistory() {
         const saved = localStorage.getItem('jarvis_history');
         return saved ? JSON.parse(saved) : [];
     }
+
     saveConversationHistory() {
         localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
     }
+
     clearConversationHistory() {
         if (!confirm("Clear your entire conversation history?")) return;
         this.conversationHistory = [];
@@ -113,6 +122,7 @@ class JarvisAIUltimate {
         this.renderAllMessages();
         this.showStatus("Chat cleared.");
     }
+
     renderAllMessages() {
         if (!this.$?.messages) return;
         this.$.messages.innerHTML = '';
@@ -120,23 +130,40 @@ class JarvisAIUltimate {
             this.renderMessage(msg.content, msg.role, false, msg.provider);
         }
     }
+
+    addMessage(content, sender, withSpeaker = false, provider = '') {
+        this.conversationHistory.push({
+            role: sender === 'user' ? 'user' : 'assistant',
+            content,
+            provider
+        });
+        this.saveConversationHistory();
+        this.renderMessage(content, sender, withSpeaker, provider);
+    }
+
     renderMessage(content, sender, withSpeaker = false, provider = '') {
         const messagesContainer = this.$.messages;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'jarvis-message'}`;
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
+        
         if (sender === 'user') {
             messageContent.textContent = content;
         } else {
-            if (content.startsWith('<img')) messageContent.innerHTML = content;
-            else messageContent.innerHTML = content;
+            if (content.startsWith('<img')) {
+                messageContent.innerHTML = content;
+            } else {
+                messageContent.innerHTML = content;
+            }
+            
             if (provider) {
                 const providerInfo = document.createElement('div');
                 providerInfo.className = 'provider-info';
                 providerInfo.textContent = `Provider: ${provider}`;
                 messageDiv.appendChild(providerInfo);
             }
+            
             if (withSpeaker) {
                 const speakerBtn = document.createElement('button');
                 speakerBtn.className = 'speaker-icon';
@@ -149,77 +176,113 @@ class JarvisAIUltimate {
                 messageDiv.appendChild(speakerBtn);
             }
         }
+        
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
         this.scrollToBottom();
     }
+
     async processUserMessage() {
         if (this.isProcessing) return;
         let message = this.$.messageInput.value.trim();
         if (!message) return;
+        
         this.isProcessing = true;
-        setTimeout(() => {
-            this.$.messageInput.value = '';
-            this.$.messageInput.style.height = '54px';
-            this.updateSendButton();
-        }, 80);
-        if (/^(explain again|expand|repeat|elaborate|clarify|explain more)$/i.test(message)) {
-            const lastBotMsg = [...this.conversationHistory].reverse().find(m => m.role === 'assistant' && m.content);
-            if (lastBotMsg) message += `\n\n(REFERENCE:${lastBotMsg.content})`;
-        }
+        this.updateSendButton();
+        
+        // Add the user message and clear input immediately
         this.addMessage(message, 'user');
+        this.$.messageInput.value = '';
+        this.$.messageInput.style.height = '54px';
+        this.updateInputPlaceholder();
         this.showTypingIndicator();
         this.showStatus(`Processing in ${this.currentMode} mode...`);
+        
         try {
+            // Contextual follow-up
+            if (/^(explain again|expand|repeat|elaborate|clarify|explain more)$/i.test(message)) {
+                const lastBotMsg = [...this.conversationHistory].reverse().find(m => m.role === 'assistant' && m.content);
+                if (lastBotMsg) {
+                    message += `\n\n(REFERENCE:${lastBotMsg.content})`;
+                }
+            }
+            
             const response = await this.getResponseBasedOnMode(message);
             this.hideTypingIndicator();
+            
             if (response.output_url) {
                 this.addMessage(`<img src="${response.output_url}" style="max-width:100%;border-radius:1rem;"/>`, 'jarvis', false, response.provider);
             } else {
                 this.addMessage(response.response || response.text, 'jarvis', true, response.provider);
             }
-            this.showStatus(`Response complete`);
+            
+            this.showStatus('Response complete');
         } catch (error) {
             this.hideTypingIndicator();
             this.addMessage(`Error: ${error.message}`, 'jarvis');
-            this.showStatus("Error");
+            this.showStatus('Error');
         } finally {
             this.isProcessing = false;
             this.updateSendButton();
-            setTimeout(() => this.$.messageInput.focus(), 60);
+            setTimeout(() => this.$.messageInput.focus(), 100);
         }
     }
+
     async getResponseBasedOnMode(message) {
         let endpoint, task;
-        if (this.currentMode === 'chat') { endpoint = '/api/chat'; task = 'chat'; }
-        else if (this.currentMode === 'search') { endpoint = '/api/chat'; task = 'search'; }
-        else if (this.currentMode === 'image') {
+        
+        if (this.currentMode === 'chat') { 
+            endpoint = '/api/chat'; 
+            task = 'chat'; 
+        } else if (this.currentMode === 'search') { 
+            endpoint = '/api/chat'; 
+            task = 'search'; 
+        } else if (this.currentMode === 'image') {
             task = 'image';
             if (this.currentImageAPI === 'huggingface') endpoint = '/api/image-huggingface';
             else if (this.currentImageAPI === 'kroki') endpoint = '/api/kroki';
             else endpoint = '/api/image-pollination';
-        } else { endpoint = '/api/chat'; task = 'chat'; }
-        const payload = { message: message, history: this.conversationHistory.slice(-4), task: task };
-        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        } else { 
+            endpoint = '/api/chat'; 
+            task = 'chat'; 
+        }
+        
+        const payload = { 
+            message: message, 
+            history: this.conversationHistory.slice(-4), 
+            task: task 
+        };
+        
+        const response = await fetch(endpoint, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+        });
+        
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`API Error ${response.status}: ${errorText}`);
         }
+        
         return await response.json();
     }
+
     setupFormEvents() {
         this.$.messageForm.addEventListener('submit', e => {
             e.preventDefault();
             this.processUserMessage();
         });
+        
         this.$.sendBtn.addEventListener('click', e => {
             e.preventDefault();
             this.processUserMessage();
         });
+        
         this.$.messageInput.addEventListener('input', () => {
             this.updateSendButton();
             this.autoResizeTextarea();
         });
+        
         this.$.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -230,8 +293,10 @@ class JarvisAIUltimate {
                 this.startVoiceRecognition();
             }
         });
+        
         this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
     }
+
     setupVoice() {
         if (this.synthesis) this.synthesis.onvoiceschanged = () => null;
         if (window.SpeechRecognition || window.webkitSpeechRecognition) {
@@ -251,7 +316,11 @@ class JarvisAIUltimate {
             this.recognition.onend = () => this.showStatus('Ready');
         }
     }
-    startVoiceRecognition() { if (this.recognition) this.recognition.start(); }
+
+    startVoiceRecognition() { 
+        if (this.recognition) this.recognition.start(); 
+    }
+
     speakText(text) {
         if (!this.synthesis) return;
         const cleanText = text.replace(/<[^>]*>/g, '').substring(0, 350);
@@ -259,20 +328,24 @@ class JarvisAIUltimate {
         this.synthesis.cancel();
         setTimeout(() => {
             const utter = new SpeechSynthesisUtterance(cleanText);
-            utter.rate = 0.95; utter.volume = 0.83;
+            utter.rate = 0.95; 
+            utter.volume = 0.83;
             this.synthesis.speak(utter);
         }, 70);
     }
+
     autoResizeTextarea() {
         const area = this.$.messageInput;
         area.style.height = 'auto';
         area.style.height = Math.min(area.scrollHeight, 120) + 'px';
     }
+
     updateSendButton() {
         const hasText = this.$.messageInput.value.trim().length > 0;
         this.$.sendBtn.disabled = !hasText || this.isProcessing;
         this.$.sendBtn.textContent = this.isProcessing ? "Sending..." : "Send";
     }
+
     updateInputPlaceholder() {
         let p = "";
         if (this.currentMode === 'search') p = "What do you want to know from the web?";
@@ -284,11 +357,29 @@ class JarvisAIUltimate {
         else p = "Ask JARVIS anything or chat... (Ctrl+Space for voice)";
         this.$.messageInput.placeholder = p;
     }
-    updateApiStatus(status) { if (this.$?.apiStatus) this.$.apiStatus.textContent = status; }
-    showStatus(text) { if (this.$?.statusBar) this.$.statusBar.textContent = text; }
-    showTypingIndicator() { this.$.typingIndicator.style.display = 'flex'; this.scrollToBottom(); }
-    hideTypingIndicator() { this.$.typingIndicator.style.display = 'none'; }
-    scrollToBottom() { setTimeout(() => { if (this.$?.messages) this.$.messages.scrollTop = this.$.messages.scrollHeight; }, 80); }
+
+    updateApiStatus(status) { 
+        if (this.$?.apiStatus) this.$.apiStatus.textContent = status; 
+    }
+
+    showStatus(text) { 
+        if (this.$?.statusBar) this.$.statusBar.textContent = text; 
+    }
+
+    showTypingIndicator() { 
+        this.$.typingIndicator.style.display = 'flex'; 
+        this.scrollToBottom(); 
+    }
+
+    hideTypingIndicator() { 
+        this.$.typingIndicator.style.display = 'none'; 
+    }
+
+    scrollToBottom() { 
+        setTimeout(() => { 
+            if (this.$?.messages) this.$.messages.scrollTop = this.$.messages.scrollHeight; 
+        }, 80); 
+    }
 }
 
 if (document.readyState === 'loading') {
@@ -296,4 +387,5 @@ if (document.readyState === 'loading') {
 } else {
     window.jarvis = new JarvisAIUltimate();
 }
-console.log("🤖 JARVIS AI v7.2.1 Foundation Intelligence loaded and ready");
+
+console.log("🤖 JARVIS AI v7.2.1 Fixed - loaded and ready");
