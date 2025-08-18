@@ -33,6 +33,8 @@ module.exports = async (req, res) => {
         const svgContent = await response.text();
         const svgDataUrl = `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
         
+        console.log(`✅ Kroki diagram generated`);
+        
         res.status(200).json({
             output_url: svgDataUrl,
             provider: 'Kroki.io (PlantUML Diagrams)',
@@ -41,30 +43,63 @@ module.exports = async (req, res) => {
         
     } catch (error) {
         console.error('❌ Kroki error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            error: 'Kroki diagram generation failed',
+            detail: error.message
+        });
     }
 };
 
 function textToPlantUML(text) {
-    // Simple conversion - can be enhanced
-    if (text.toLowerCase().includes('flowchart') || text.toLowerCase().includes('process')) {
+    // Enhanced text-to-diagram conversion
+    const textLower = text.toLowerCase();
+    
+    if (textLower.includes('flowchart') || textLower.includes('process') || textLower.includes('workflow')) {
         return `@startuml
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E1F5FE
+  BorderColor #0288D1
+  FontColor #0277BD
+}
+
 start
 :${text};
-:Process Step 1;
-:Process Step 2;
-:Result;
+:Step 1: Initialize;
+:Step 2: Process;
+:Step 3: Complete;
 stop
 @enduml`;
-    } else if (text.toLowerCase().includes('sequence')) {
+    } else if (textLower.includes('sequence') || textLower.includes('interaction')) {
         return `@startuml
-Alice -> Bob: ${text}
-Bob -> Alice: Response
+skinparam backgroundColor #FEFEFE
+User -> System: ${text}
+activate System
+System -> Database: Query
+activate Database
+Database --> System: Result
+deactivate Database
+System --> User: Response
+deactivate System
+@enduml`;
+    } else if (textLower.includes('class') || textLower.includes('object')) {
+        return `@startuml
+skinparam backgroundColor #FEFEFE
+class ${text.split(' ')[0]} {
+  +property1
+  +property2
+  +method1()
+  +method2()
+}
 @enduml`;
     } else {
         return `@startuml
-note as N1
-  ${text}
+skinparam backgroundColor #FEFEFE
+note as N1 #E8F5E8
+  <b>${text}</b>
+  ----
+  Generated diagram
+  from text description
 end note
 @enduml`;
     }
