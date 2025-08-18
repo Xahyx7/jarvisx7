@@ -3,94 +3,59 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>JARVIS AI Ultimate v7.2 - Foundation Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<title>JARVIS AI Ultimate v7.2.1 - Foundation Intelligence</title>
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" />
 </head>
 <body>
 <div class="app-container">
   <!-- Sidebar -->
-  <div class="sidebar">
+  <nav class="sidebar" aria-label="Main navigation">
     <div class="sidebar-header">
-      <div class="jarvis-logo">J</div>
-      <div class="jarvis-title">JARVIS v7.2</div>
+      <div class="jarvis-logo" aria-label="JARVIS Home">J</div>
+      <div class="jarvis-title">JARVIS v7.2.1</div>
     </div>
-    <div class="sidebar-menu">
-      <div class="menu-item active" data-mode="chat">💬 Chat</div>
-      <div class="menu-item" data-mode="search">🔍 Web Search</div>
-      <div class="menu-item" data-mode="image">🎨 Image Generator</div>
-      <div class="menu-item">⚙️ Settings</div>
-      <div class="menu-item">📊 Analytics</div>
-      <div class="menu-item">❓ Help</div>
-    </div>
-  </div>
-  <!-- Main Chat Area -->
-  <div class="main-area">
-    <div class="top-bar">
-      <span>JARVIS AI Ultimate v7.2 - Foundation Intelligence</span>
-      <div class="api-indicators">
-        <span id="primaryApiStatus" class="api-status">🧠 Groq</span>
-        <span id="fallbackApiStatus" class="api-status">⚡ Backup</span>
-        <span id="searchApiStatus" class="api-status">🔍 Search</span>
+    <ul class="sidebar-menu">
+      <li class="menu-item active" data-mode="chat" tabindex="0">💬 Chat</li>
+      <li class="menu-item" data-mode="search" tabindex="0">🔍 Web Search</li>
+      <li class="menu-item" data-mode="image" tabindex="0">🎨 Image Gen</li>
+      <li class="menu-item" data-mode="settings" tabindex="0">⚙️ Settings</li>
+      <li class="menu-item" data-mode="analytics" tabindex="0">📊 Analytics</li>
+      <li class="menu-item" data-mode="help" tabindex="0">❓ Help</li>
+    </ul>
+  </nav>
+  <main class="main-area">
+    <header class="top-bar">
+      <span>JARVIS AI Ultimate v7.2.1 - Foundation Intelligence</span>
+      <div class="actions-group">
+        <span class="api-status" id="apiStatus">🧠 Groq ready</span>
+        <button id="clearHistoryBtn" title="Clear Conversation" aria-label="Clear Conversation">
+          🗑️
+        </button>
       </div>
-    </div>
-    <!-- Image API Selector - shows only in Image Mode -->
-    <div id="image-api-selector" style="display: none; padding: 0.75rem 1.5rem; background: #161616; border-bottom: 1px solid #2a2a2a; gap: 1rem; justify-content: center;">
-      <button data-api="pollinations" class="api-btn active">🎨 Pollinations</button>
-      <button data-api="huggingface" class="api-btn">🤖 Hugging Face</button>
-      <button data-api="kroki" class="api-btn">📊 Kroki (Diagrams)</button>
-    </div>
-    <div class="chat-container">
-      <div id="messagesContainer" class="chat-messages">
-        <!-- Welcome message -->
-        <div class="message jarvis-message welcome-message">
-          <div class="message-content">
-            <h3>🤖 Welcome to JARVIS v7.2 Foundation Intelligence!</h3>
-            <p>New capabilities in this version:</p>
-            <ul>
-              <li>🧠 <strong>Current Knowledge</strong> - Groq AI chat</li>
-              <li>🔍 <strong>Web Search</strong> - Serper with fallback</li>
-              <li>🎤 <strong>Voice Input</strong> - Voice commands and speech recognition</li>
-              <li>🔊 <strong>Talk-back</strong> - Read responses aloud to you</li>
-              <li>⚡ <strong>Smart Fallbacks</strong> - Robust handling of failures</li>
-              <li>🎨 <strong>Multi-Style Image Gen</strong> - Pollinations, Hugging Face, Kroki</li>
-            </ul>
-            <p>How can I assist you today?</p>
-          </div>
-          <div class="provider-info">
-            <small>📡 JARVIS System</small>
-          </div>
-        </div>
-      </div>
-      <div id="typingIndicator" class="typing-indicator" style="display: none;">
+    </header>
+    <section id="image-api-selector" style="display:none;">
+        <button data-api="pollinations" class="api-btn active">🎨 Pollinations</button>
+        <button data-api="huggingface" class="api-btn">🤖 Hugging Face</button>
+        <button data-api="kroki" class="api-btn">📊 Kroki</button>
+    </section>
+    <section class="chat-container">
+      <div id="messagesContainer" class="chat-messages"></div>
+      <div id="typingIndicator" class="typing-indicator" style="display:none;">
         <span>JARVIS is thinking</span>
-        <div class="typing-dots">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-        </div>
+        <div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
       </div>
-      <div class="input-container">
-        <form id="messageForm" class="input-wrapper">
-          <textarea 
-            id="messageInput" 
-            placeholder="Message JARVIS... (Ctrl+Space for voice)" 
-            rows="1"
-            autocomplete="off"
-          ></textarea>
-          <button type="submit" id="sendBtn" disabled>Send</button>
-        </form>
-        <button id="clearHistoryBtn" title="Clear chat history" style="margin-top:10px; margin-left:16px;">🗑️ Clear Conversation</button>
-      </div>
-    </div>
-    <div class="status-bar">
-      <span id="statusText">JARVIS v7.2 Ready</span>
-      <span>•</span>
-      <span id="apiStatus">Foundation Intelligence Active</span>
-      <span>•</span>
+      <form id="messageForm" class="input-wrapper" autocomplete="off">
+        <textarea id="messageInput" aria-label="Type your message" placeholder="Message JARVIS... (Ctrl+Space = voice)" rows="1" autocomplete="off"></textarea>
+        <button type="submit" id="sendBtn" disabled>Send</button>
+      </form>
+    </section>
+    <footer class="status-bar">
+      <span id="statusText">Ready</span>
+      <span>|</span>
       <span id="versionInfo">Build 2025.08.18</span>
-    </div>
-  </div>
+    </footer>
+  </main>
 </div>
 <script src="script.js"></script>
 </body>
