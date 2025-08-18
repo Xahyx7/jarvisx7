@@ -10,6 +10,8 @@ module.exports = async (req, res) => {
         const { message = "", history = [] } = req.body;
         if (!message) return res.status(400).json({ error: 'Message is required' });
         
+        console.log('📨 Processing message:', message.substring(0, 50));
+        
         const cleanHistory = Array.isArray(history) 
             ? history.slice(-2).map(m => ({role: m.role, content: m.content})) 
             : [];
@@ -20,6 +22,8 @@ module.exports = async (req, res) => {
             {role: "user", content: String(message)}
         ];
         
+        console.log('🔑 Using API key:', process.env.GROQ_API_KEY ? 'SET' : 'NOT SET');
+        
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -27,33 +31,54 @@ module.exports = async (req, res) => {
                 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', // THIS IS THE CURRENT ACTIVE MODEL
+                model: 'llama-3.3-70b-versatile',
                 messages,
                 max_tokens: 500,
                 temperature: 0.7
             })
         });
         
+        console.log('📡 Response status:', response.status);
+        
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('❌ Groq API error:', errorText);
             throw new Error(`Groq API error: ${response.status} - ${errorText}`);
         }
         
         const data = await response.json();
+        console.log('📦 Raw response keys:', Object.keys(data));
+        console.log('📦 Choices length:', data.choices?.length);
         
-        if (!data.choices || !data.choices[0] || !data.choices.message || !data.choices.message.content) {
-            console.error('Groq response:', JSON.stringify(data));
-            throw new Error("No model response");
+        // SIMPLIFIED VALIDATION - This is the key fix!
+        let content = null;
+        
+        if (data.choices && data.choices.length > 0) {
+            const choice = data.choices[0];
+            if (choice.message && choice.message.content) {
+                content = choice.message.content;
+            } else if (choice.text) {
+                content = choice.text;
+            } else if (choice.delta && choice.delta.content) {
+                content = choice.delta.content;
+            }
         }
         
+        if (!content) {
+            console.error('❌ Full response structure:', JSON.stringify(data, null, 2));
+            throw new Error("No content found in response");
+        }
+        
+        console.log('✅ Content extracted, length:', content.length);
+        
         res.status(200).json({
-            response: data.choices.message.content,
+            response: content,
             provider: "Groq (llama-3.3-70b)",
             timestamp: new Date().toISOString()
         });
         
     } catch (error) {
-        console.error('Chat error:', error);
+        console.error('💥 Chat error:', error.message);
         res.status(500).json({
             error: "Chat failed",
             detail: error.message
