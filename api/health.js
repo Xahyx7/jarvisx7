@@ -11,7 +11,7 @@ module.exports = (req, res) => {
     res.status(200).json({
         status: 'JARVIS Backend Online',
         timestamp: new Date().toISOString(),
-        version: '7.2.1-foundation-intelligence', // Updated version
+        version: '7.2.1-foundation-intelligence',
         api_provider: 'Groq',
         api_configured: isConfigured,
         groq_status: isConfigured ? 'Ready' : 'Missing Key'
