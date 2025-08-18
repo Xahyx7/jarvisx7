@@ -3,27 +3,22 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
         const { message } = req.body;
         
         if (!message) {
-            return res.status(400).json({ error: 'Message (prompt) is required' });
+            return res.status(400).json({ error: 'Message is required' });
         }
 
-        console.log(`🎨 Image generation request: ${message}`);
+        console.log(`🎨 Pollinations image request: ${message}`);
 
-        // Use Pollinations.ai - completely free
+        // Pollinations.ai - completely free, no API key needed
         const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(message)}?width=512&height=512&nologo=true`;
         
-        console.log(`✅ Image generated: ${imageUrl}`);
+        console.log(`✅ Pollinations image generated: ${imageUrl}`);
         
         res.status(200).json({
             output_url: imageUrl,
@@ -32,9 +27,9 @@ module.exports = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Image generation error:', error);
+        console.error('❌ Pollinations error:', error);
         res.status(500).json({ 
-            error: 'Image generation failed',
+            error: 'Pollinations image generation failed',
             detail: error.message
         });
     }
