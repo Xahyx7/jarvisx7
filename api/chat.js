@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
                 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama-3.1-70b-versatile', // GUARANTEED FREE MODEL
+                model: 'llama-3.3-70b-versatile', // THIS IS THE CURRENT ACTIVE MODEL
                 messages,
                 max_tokens: 500,
                 temperature: 0.7
@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
         
         res.status(200).json({
             response: data.choices.message.content,
-            provider: "Groq (llama-3.1-70b)",
+            provider: "Groq (llama-3.3-70b)",
             timestamp: new Date().toISOString()
         });
         
