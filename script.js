@@ -14,10 +14,11 @@ class JarvisAIUltimate {
         await this.waitForDOM();
         this.cacheUI();
         this.renderAllMessages();
-        this.setupSidebarNavigation(); // Enhanced sidebar setup
+        this.setupSidebarNavigation();
         this.setupImageApiSelector();
         this.setupFormEvents();
         this.setupVoice();
+        this.setupNeonEffects();
         this.updateInputPlaceholder();
         this.updateApiStatus("🧠 NOVA ready");
         this.showStatus("Ready");
@@ -95,6 +96,23 @@ class JarvisAIUltimate {
                 }
             });
         });
+    }
+
+    // NEON EFFECTS FOR NOVA TEXT
+    setupNeonEffects() {
+        const novaText = document.querySelector('.neon-nova');
+        if (novaText) {
+            // Add click effect
+            novaText.addEventListener('click', () => {
+                novaText.style.animation = 'none';
+                novaText.style.textShadow = '0 0 20px #f0f0f0, 0 0 40px #f0f0f0, 0 0 60px #f5f5f5, 0 0 80px #f5f5f5';
+                
+                setTimeout(() => {
+                    novaText.style.animation = 'neonPulse 2s ease-in-out infinite alternate';
+                    novaText.style.textShadow = '';
+                }, 1000);
+            });
+        }
     }
 
     switchMode(mode) {
@@ -514,4 +532,4 @@ if (document.readyState === 'loading') {
     window.jarvis = new JarvisAIUltimate();
 }
 
-console.log("🤖 NOVA AI v7.2.1 Fixed Sidebar with Enhanced Glow - loaded and ready");
+console.log("🤖 NOVA AI v7.2.1 - Professional UI with Enhanced Glow Effects - loaded and ready");
