@@ -686,3 +686,105 @@ body {
 .error {
     border-color: #f87171 !important;
 }
+/* INCREASED CHAT AREA - More Visible Space */
+.chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 0; /* reduced padding */
+    scroll-behavior: smooth;
+    max-height: calc(100vh - 250px); /* INCREASED from 400px to 250px */
+}
+
+/* REDUCED INPUT SECTION HEIGHT */
+.input-section {
+    padding: 15px 0 10px 0; /* reduced from 30px to 15px/10px */
+    border-top: 1px solid var(--border-color);
+}
+
+/* SMALLER QUICK ACTIONS */
+.quick-actions {
+    display: flex;
+    gap: 8px; /* reduced from 12px */
+    justify-content: flex-start; /* align left instead of center */
+    flex-wrap: wrap;
+    margin-top: 8px; /* reduced spacing */
+}
+
+.action-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px; /* reduced from 8px 16px */
+    border-radius: 15px; /* smaller radius */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 10px; /* reduced from 12px */
+    font-weight: 500;
+}
+
+/* IMPROVED HEADER LAYOUT */
+.welcome-text {
+    font-size: 36px; /* larger for just NOVA */
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-align: center;
+    position: relative;
+}
+
+.neon-nova {
+    color: #c0c0c0;
+    font-weight: 900; /* bolder */
+    font-size: 42px; /* even larger */
+    text-shadow: 
+        0 0 5px #c0c0c0,
+        0 0 10px #d3d3d3,
+        0 0 20px #d3d3d3,
+        0 0 40px #e0e0e0,
+        0 0 60px #e0e0e0;
+    animation: neonPulse 2s ease-in-out infinite alternate;
+    position: relative;
+    letter-spacing: 3px; /* increased spacing */
+    text-transform: uppercase;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+/* SMALLER STATUS BAR */
+.status-bar {
+    padding: 8px 0; /* reduced from 15px */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px; /* smaller */
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-color);
+}
+
+/* OPTIMIZED PANEL HEADER */
+.panel-header {
+    text-align: center;
+    padding: 30px 0 25px 0; /* reduced padding */
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+}
+
+/* SMALLER IMAGE API SELECTOR */
+.image-api-selector {
+    display: none;
+    gap: 8px; /* reduced */
+    padding: 12px 0; /* reduced from 20px */
+    justify-content: center;
+}
+
+.api-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px; /* reduced */
+    border-radius: 15px; /* smaller */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 11px; /* smaller */
+    font-weight: 500;
+}
