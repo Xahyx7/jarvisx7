@@ -1,33 +1,59 @@
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    
     try {
         const { message } = req.body;
         if (!message) return res.status(400).json({ error: 'Message is required' });
-        // Provide VERY simple PlantUML syntax
-        const diagram = `@startuml
-title Diagram
-note as N1
-${message}
+        
+        console.log('📊 Kroki request:', message);
+        
+        // Create simple PlantUML diagram
+        const plantUML = `@startuml
+title ${message.substring(0, 30)}
+note as N1 #lightblue
+  ${message}
 end note
 @enduml`;
-        const diagramRes = await fetch('https://kroki.io/plantuml/svg', {
+
+        console.log('📝 PlantUML:', plantUML);
+        
+        // CORRECT KROKI API FORMAT (from official docs)
+        const response = await fetch('https://kroki.io/plantuml/svg', {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: diagram
+            headers: {
+                'Content-Type': 'text/plain',
+                'Accept': 'image/svg+xml'
+            },
+            body: plantUML
         });
-        if (!diagramRes.ok) throw new Error('Kroki diagram error');
-        const svg = await diagramRes.text();
-        // Inline SVG for browser rendering
+        
+        if (!response.ok) {
+            console.error(`Kroki API error: ${response.status} ${response.statusText}`);
+            throw new Error(`Kroki API error: ${response.status}`);
+        }
+        
+        const svgContent = await response.text();
+        console.log('✅ SVG received, length:', svgContent.length);
+        
+        // Return SVG as data URL
+        const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+        
         res.status(200).json({
-            output_url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-            provider: 'Kroki.io svg',
+            output_url: dataUrl,
+            provider: "Kroki.io",
             prompt: message
         });
+        
     } catch (error) {
-        res.status(500).json({ error: 'Kroki diagram generation failed', detail: error.message });
+        console.error('❌ Kroki error:', error);
+        res.status(500).json({ 
+            error: 'Kroki failed',
+            detail: error.message
+        });
     }
 };
