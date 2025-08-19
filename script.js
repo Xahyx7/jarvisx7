@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v7.2.1-Fixed-WebSearch";
+        this.version = "NOVA-Ultimate-v7.2.1-Fixed-WebSearch";
         this.isProcessing = false;
         this.conversationHistory = this.loadConversationHistory();
         this.currentMode = 'chat';
@@ -14,12 +14,12 @@ class JarvisAIUltimate {
         await this.waitForDOM();
         this.cacheUI();
         this.renderAllMessages();
-        this.setupSidebarNavigation();
+        this.setupSidebarNavigation(); // Enhanced sidebar setup
         this.setupImageApiSelector();
         this.setupFormEvents();
         this.setupVoice();
         this.updateInputPlaceholder();
-        this.updateApiStatus("🧠 Groq ready");
+        this.updateApiStatus("🧠 NOVA ready");
         this.showStatus("Ready");
     }
 
@@ -36,28 +36,63 @@ class JarvisAIUltimate {
             messageForm: document.getElementById('messageForm'),
             sendBtn: document.getElementById('sendBtn'),
             typingIndicator: document.getElementById('typingIndicator'),
-            apiSelector: document.getElementById('image-api-selector'),
+            apiSelector: document.querySelector('.image-api-selector'),
             apiStatus: document.getElementById('apiStatus'),
-            sidebar: document.querySelector('.sidebar-menu'),
+            sidebar: document.querySelector('.sidebar'),
             statusBar: document.getElementById('statusText'),
             clearBtn: document.getElementById('clearHistoryBtn')
         };
     }
 
+    // ENHANCED SIDEBAR SETUP WITH GLOW EFFECTS
     setupSidebarNavigation() {
-        const items = document.querySelectorAll('.menu-item');
+        const items = document.querySelectorAll('.sidebar-item');
         items.forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active from all items
                 items.forEach(i => i.classList.remove('active'));
+                
+                // Add active to clicked item
                 item.classList.add('active');
+                
+                // Get mode and switch
                 const mode = item.getAttribute('data-mode');
-                if (!mode) return;
-                this.switchMode(mode);
+                if (mode) {
+                    this.switchMode(mode);
+                }
+                
+                // Add temporary intense glow effect
+                item.style.boxShadow = '0 0 40px rgba(211, 211, 211, 1), 0 0 80px rgba(211, 211, 211, 0.5)';
+                setTimeout(() => {
+                    item.style.boxShadow = '0 0 30px rgba(211, 211, 211, 0.8), 0 0 60px rgba(211, 211, 211, 0.4)';
+                }, 300);
+            });
+            
+            // Enhanced hover effects
+            item.addEventListener('mouseenter', () => {
+                if (!item.classList.contains('active')) {
+                    item.style.transform = 'translateY(-2px)';
+                    item.style.boxShadow = '0 0 20px rgba(211, 211, 211, 0.6)';
+                }
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                if (!item.classList.contains('active')) {
+                    item.style.transform = 'translateY(0)';
+                    item.style.boxShadow = 'none';
+                }
             });
         });
+
+        // Keyboard navigation
         items.forEach(item => {
             item.addEventListener('keyup', (e) => {
-                if (e.key === "Enter" || e.key === " ") item.click();
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    item.click();
+                }
             });
         });
     }
@@ -66,11 +101,20 @@ class JarvisAIUltimate {
         this.currentMode = mode;
         console.log(`🔄 Switching to mode: ${mode}`);
         
+        // Enhanced glow effect on logo during mode switch
+        const logoOrb = document.querySelector('.nova-logo-orb');
+        if (logoOrb) {
+            logoOrb.style.boxShadow = '0 0 40px rgba(211, 211, 211, 1), 0 0 80px rgba(211, 211, 211, 0.5), 0 0 120px rgba(211, 211, 211, 0.3)';
+            setTimeout(() => {
+                logoOrb.style.boxShadow = '0 0 30px rgba(211, 211, 211, 0.8), 0 0 60px rgba(211, 211, 211, 0.4)';
+            }, 500);
+        }
+        
         switch (mode) {
             case 'chat':
                 this.hideImageApiSelector();
                 this.showStatus("Chat Ready");
-                this.updateApiStatus("🧠 Groq ready");
+                this.updateApiStatus("🧠 NOVA ready");
                 this.addMessage("💬 Chat mode activated. Ask me anything!", 'jarvis', false, '');
                 break;
             case 'search':
@@ -89,7 +133,7 @@ class JarvisAIUltimate {
                 this.hideImageApiSelector();
                 this.showStatus("Settings");
                 this.updateApiStatus("⚙️ Settings");
-                this.addMessage("⚙️ Settings mode - Configure your JARVIS experience.", 'jarvis', false, '');
+                this.addMessage("⚙️ Settings mode - Configure your NOVA experience.", 'jarvis', false, '');
                 break;
             case 'analytics':
                 this.hideImageApiSelector();
@@ -112,7 +156,7 @@ class JarvisAIUltimate {
     }
 
     setupImageApiSelector() {
-        const btns = document.querySelectorAll('#image-api-selector .api-btn');
+        const btns = document.querySelectorAll('.image-api-selector .api-btn');
         btns.forEach(btn => {
             btn.addEventListener('click', () => {
                 btns.forEach(b => b.classList.remove('active'));
@@ -125,8 +169,20 @@ class JarvisAIUltimate {
         });
     }
 
-    showImageApiSelector() { this.$.apiSelector.style.display = 'flex'; }
-    hideImageApiSelector() { this.$.apiSelector.style.display = 'none'; }
+    // FIXED SHOW/HIDE IMAGE SELECTOR METHODS
+    showImageApiSelector() { 
+        const selector = document.querySelector('.image-api-selector');
+        if (selector) {
+            selector.style.display = 'flex';
+        }
+    }
+
+    hideImageApiSelector() { 
+        const selector = document.querySelector('.image-api-selector');
+        if (selector) {
+            selector.style.display = 'none';
+        }
+    }
 
     loadConversationHistory() {
         const saved = localStorage.getItem('jarvis_history');
@@ -221,7 +277,6 @@ class JarvisAIUltimate {
         this.isProcessing = true;
         this.updateSendButton();
         
-        // Add the user message and clear input immediately
         this.addMessage(message, 'user');
         this.$.messageInput.value = '';
         this.$.messageInput.style.height = '54px';
@@ -230,7 +285,6 @@ class JarvisAIUltimate {
         this.showStatus(`Processing in ${this.currentMode} mode...`);
         
         try {
-            // Contextual follow-up handling
             if (/^(explain again|expand|repeat|elaborate|clarify|explain more)$/i.test(message)) {
                 const lastBotMsg = [...this.conversationHistory].reverse().find(m => m.role === 'assistant' && m.content);
                 if (lastBotMsg) {
@@ -266,7 +320,6 @@ class JarvisAIUltimate {
         
         console.log(`🎯 Current mode: ${this.currentMode}`);
         
-        // FIXED: Proper endpoint routing based on mode
         switch (this.currentMode) {
             case 'chat':
                 endpoint = '/api/chat';
@@ -274,7 +327,7 @@ class JarvisAIUltimate {
                 console.log('📡 Using chat endpoint');
                 break;
             case 'search':
-                endpoint = '/api/search';  // Dedicated search endpoint
+                endpoint = '/api/search';
                 task = 'search';
                 console.log('🔍 Using search endpoint');
                 break;
@@ -288,7 +341,6 @@ class JarvisAIUltimate {
             case 'settings':
             case 'analytics':
             case 'help':
-                // For now, these modes use chat but could have dedicated endpoints later
                 endpoint = '/api/chat';
                 task = 'chat';
                 break;
@@ -362,7 +414,7 @@ class JarvisAIUltimate {
             this.recognition.interimResults = false;
             this.recognition.onstart = () => this.showStatus("🎤 Listening... Speak now");
             this.recognition.onresult = (e) => {
-                const transcript = e.results[0].transcript;
+                const transcript = e.results[0][0].transcript;
                 this.$.messageInput.value = transcript;
                 this.updateSendButton();
                 this.$.messageInput.focus();
@@ -417,7 +469,7 @@ class JarvisAIUltimate {
                 else p = "🎨 What image would you like to generate?";
                 break;
             case 'settings':
-                p = "⚙️ Configure JARVIS settings...";
+                p = "⚙️ Configure NOVA settings...";
                 break;
             case 'analytics':
                 p = "📊 Ask about usage analytics...";
@@ -426,7 +478,7 @@ class JarvisAIUltimate {
                 p = "❓ Ask for help or available commands...";
                 break;
             default:
-                p = "💬 Ask JARVIS anything... (Ctrl+Space for voice)";
+                p = "💬 Ask NOVA anything... (Ctrl+Space for voice)";
         }
         this.$.messageInput.placeholder = p;
     }
@@ -455,11 +507,11 @@ class JarvisAIUltimate {
     }
 }
 
-// Initialize JARVIS when DOM is ready
+// Initialize NOVA when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => window.jarvis = new JarvisAIUltimate());
 } else {
     window.jarvis = new JarvisAIUltimate();
 }
 
-console.log("🤖 JARVIS AI v7.2.1 Fixed with Web Search - loaded and ready");
+console.log("🤖 NOVA AI v7.2.1 Fixed Sidebar with Enhanced Glow - loaded and ready");
