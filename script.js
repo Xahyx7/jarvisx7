@@ -1,6 +1,6 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "JARVIS-Ultimate-v7.2.1-Fixed";
+        this.version = "JARVIS-Ultimate-v7.2.1-Fixed-WebSearch";
         this.isProcessing = false;
         this.conversationHistory = this.loadConversationHistory();
         this.currentMode = 'chat';
@@ -64,22 +64,44 @@ class JarvisAIUltimate {
 
     switchMode(mode) {
         this.currentMode = mode;
+        console.log(`🔄 Switching to mode: ${mode}`);
+        
         switch (mode) {
             case 'chat':
                 this.hideImageApiSelector();
                 this.showStatus("Chat Ready");
                 this.updateApiStatus("🧠 Groq ready");
+                this.addMessage("💬 Chat mode activated. Ask me anything!", 'jarvis', false, '');
                 break;
             case 'search':
                 this.hideImageApiSelector();
                 this.showStatus("Web Search Ready");
-                this.updateApiStatus("🔍 Serper ready");
+                this.updateApiStatus("🔍 Web Search ready");
+                this.addMessage("🔍 Web Search mode activated! I'll search the internet for you.", 'jarvis', false, '');
                 break;
             case 'image':
                 this.showImageApiSelector();
                 this.showStatus("Image Generator Ready");
                 this.updateApiStatus("🎨 Pollinations");
                 this.addMessage("🎨 Image Mode Activated! Pick a style above and type what to generate.", 'jarvis', false, '');
+                break;
+            case 'settings':
+                this.hideImageApiSelector();
+                this.showStatus("Settings");
+                this.updateApiStatus("⚙️ Settings");
+                this.addMessage("⚙️ Settings mode - Configure your JARVIS experience.", 'jarvis', false, '');
+                break;
+            case 'analytics':
+                this.hideImageApiSelector();
+                this.showStatus("Analytics");
+                this.updateApiStatus("📊 Analytics");
+                this.addMessage("📊 Analytics mode - View your usage statistics.", 'jarvis', false, '');
+                break;
+            case 'help':
+                this.hideImageApiSelector();
+                this.showStatus("Help");
+                this.updateApiStatus("❓ Help");
+                this.addMessage("❓ Help mode - Available commands:\n• Chat: General conversation\n• Web Search: Real-time web searches\n• Image Gen: Generate images\n• Voice: Ctrl+Space for voice input", 'jarvis', false, '');
                 break;
             default:
                 this.hideImageApiSelector();
@@ -97,7 +119,7 @@ class JarvisAIUltimate {
                 btn.classList.add('active');
                 this.currentImageAPI = btn.getAttribute('data-api');
                 this.updateApiStatus(`🎨 ${btn.textContent.trim()}`);
-                this.addMessage(`🎨 Image API: ${this.currentImageAPI}`, 'jarvis');
+                this.addMessage(`🎨 Image API switched to: ${this.currentImageAPI}`, 'jarvis');
                 this.updateInputPlaceholder();
             });
         });
@@ -121,6 +143,7 @@ class JarvisAIUltimate {
         localStorage.removeItem('jarvis_history');
         this.renderAllMessages();
         this.showStatus("Chat cleared.");
+        this.addMessage("🧹 Conversation history cleared.", 'jarvis', false, '');
     }
 
     renderAllMessages() {
@@ -135,7 +158,8 @@ class JarvisAIUltimate {
         this.conversationHistory.push({
             role: sender === 'user' ? 'user' : 'assistant',
             content,
-            provider
+            provider,
+            timestamp: new Date().toISOString()
         });
         this.saveConversationHistory();
         this.renderMessage(content, sender, withSpeaker, provider);
@@ -154,7 +178,7 @@ class JarvisAIUltimate {
             if (content.startsWith('<img')) {
                 messageContent.innerHTML = content;
             } else {
-                messageContent.innerHTML = content;
+                messageContent.innerHTML = content.replace(/\n/g, '<br>');
             }
             
             if (provider) {
@@ -183,9 +207,16 @@ class JarvisAIUltimate {
     }
 
     async processUserMessage() {
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            console.warn('Already processing a message');
+            return;
+        }
+        
         let message = this.$.messageInput.value.trim();
-        if (!message) return;
+        if (!message) {
+            console.warn('Empty message - not sending');
+            return;
+        }
         
         this.isProcessing = true;
         this.updateSendButton();
@@ -199,11 +230,12 @@ class JarvisAIUltimate {
         this.showStatus(`Processing in ${this.currentMode} mode...`);
         
         try {
-            // Contextual follow-up
+            // Contextual follow-up handling
             if (/^(explain again|expand|repeat|elaborate|clarify|explain more)$/i.test(message)) {
                 const lastBotMsg = [...this.conversationHistory].reverse().find(m => m.role === 'assistant' && m.content);
                 if (lastBotMsg) {
                     message += `\n\n(REFERENCE:${lastBotMsg.content})`;
+                    console.log('Contextual follow-up detected');
                 }
             }
             
@@ -218,8 +250,9 @@ class JarvisAIUltimate {
             
             this.showStatus('Response complete');
         } catch (error) {
+            console.error('Error in processUserMessage:', error);
             this.hideTypingIndicator();
-            this.addMessage(`Error: ${error.message}`, 'jarvis');
+            this.addMessage(`❌ Error: ${error.message}`, 'jarvis');
             this.showStatus('Error');
         } finally {
             this.isProcessing = false;
@@ -231,20 +264,37 @@ class JarvisAIUltimate {
     async getResponseBasedOnMode(message) {
         let endpoint, task;
         
-        if (this.currentMode === 'chat') { 
-            endpoint = '/api/chat'; 
-            task = 'chat'; 
-        } else if (this.currentMode === 'search') { 
-            endpoint = '/api/chat'; 
-            task = 'search'; 
-        } else if (this.currentMode === 'image') {
-            task = 'image';
-            if (this.currentImageAPI === 'huggingface') endpoint = '/api/image-huggingface';
-            else if (this.currentImageAPI === 'kroki') endpoint = '/api/kroki';
-            else endpoint = '/api/image-pollination';
-        } else { 
-            endpoint = '/api/chat'; 
-            task = 'chat'; 
+        console.log(`🎯 Current mode: ${this.currentMode}`);
+        
+        // FIXED: Proper endpoint routing based on mode
+        switch (this.currentMode) {
+            case 'chat':
+                endpoint = '/api/chat';
+                task = 'chat';
+                console.log('📡 Using chat endpoint');
+                break;
+            case 'search':
+                endpoint = '/api/search';  // Dedicated search endpoint
+                task = 'search';
+                console.log('🔍 Using search endpoint');
+                break;
+            case 'image':
+                task = 'image';
+                console.log(`🎨 Using image endpoint: ${this.currentImageAPI}`);
+                if (this.currentImageAPI === 'huggingface') endpoint = '/api/image-huggingface';
+                else if (this.currentImageAPI === 'kroki') endpoint = '/api/kroki';
+                else endpoint = '/api/image-pollination';
+                break;
+            case 'settings':
+            case 'analytics':
+            case 'help':
+                // For now, these modes use chat but could have dedicated endpoints later
+                endpoint = '/api/chat';
+                task = 'chat';
+                break;
+            default:
+                endpoint = '/api/chat';
+                task = 'chat';
         }
         
         const payload = { 
@@ -252,6 +302,8 @@ class JarvisAIUltimate {
             history: this.conversationHistory.slice(-4), 
             task: task 
         };
+        
+        console.log(`📤 Sending to ${endpoint}:`, { message: message.substring(0, 50), task });
         
         const response = await fetch(endpoint, { 
             method: 'POST', 
@@ -261,10 +313,13 @@ class JarvisAIUltimate {
         
         if (!response.ok) {
             const errorText = await response.text();
+            console.error(`API Error ${response.status}:`, errorText);
             throw new Error(`API Error ${response.status}: ${errorText}`);
         }
         
-        return await response.json();
+        const result = await response.json();
+        console.log('📥 Response received:', result);
+        return result;
     }
 
     setupFormEvents() {
@@ -305,20 +360,24 @@ class JarvisAIUltimate {
             this.recognition.lang = "en-US";
             this.recognition.continuous = false;
             this.recognition.interimResults = false;
-            this.recognition.onstart = () => this.showStatus("Listening... Speak now");
+            this.recognition.onstart = () => this.showStatus("🎤 Listening... Speak now");
             this.recognition.onresult = (e) => {
                 const transcript = e.results[0].transcript;
                 this.$.messageInput.value = transcript;
                 this.updateSendButton();
                 this.$.messageInput.focus();
             };
-            this.recognition.onerror = () => this.showStatus('Speech recognition error');
+            this.recognition.onerror = () => this.showStatus('❌ Speech recognition error');
             this.recognition.onend = () => this.showStatus('Ready');
         }
     }
 
     startVoiceRecognition() { 
-        if (this.recognition) this.recognition.start(); 
+        if (this.recognition) {
+            this.recognition.start();
+        } else {
+            this.showStatus('🚫 Voice recognition not supported');
+        }
     }
 
     speakText(text) {
@@ -348,13 +407,27 @@ class JarvisAIUltimate {
 
     updateInputPlaceholder() {
         let p = "";
-        if (this.currentMode === 'search') p = "What do you want to know from the web?";
-        else if (this.currentMode === 'image') {
-            if (this.currentImageAPI === 'kroki') p = "Describe a diagram (e.g. flowchart)";
-            else if (this.currentImageAPI === 'huggingface') p = "Describe an image or diagram...";
-            else p = "What image would you like to generate?";
+        switch (this.currentMode) {
+            case 'search':
+                p = "🔍 What would you like to search for on the web?";
+                break;
+            case 'image':
+                if (this.currentImageAPI === 'kroki') p = "📊 Describe a diagram (e.g., flowchart, sequence diagram)";
+                else if (this.currentImageAPI === 'huggingface') p = "🤖 Describe an image to generate...";
+                else p = "🎨 What image would you like to generate?";
+                break;
+            case 'settings':
+                p = "⚙️ Configure JARVIS settings...";
+                break;
+            case 'analytics':
+                p = "📊 Ask about usage analytics...";
+                break;
+            case 'help':
+                p = "❓ Ask for help or available commands...";
+                break;
+            default:
+                p = "💬 Ask JARVIS anything... (Ctrl+Space for voice)";
         }
-        else p = "Ask JARVIS anything or chat... (Ctrl+Space for voice)";
         this.$.messageInput.placeholder = p;
     }
 
@@ -382,10 +455,11 @@ class JarvisAIUltimate {
     }
 }
 
+// Initialize JARVIS when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => window.jarvis = new JarvisAIUltimate());
 } else {
     window.jarvis = new JarvisAIUltimate();
 }
 
-console.log("🤖 JARVIS AI v7.2.1 Fixed - loaded and ready");
+console.log("🤖 JARVIS AI v7.2.1 Fixed with Web Search - loaded and ready");
