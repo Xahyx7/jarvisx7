@@ -1,6 +1,6 @@
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
     if (req.method === 'OPTIONS') return res.status(200).end();
@@ -12,9 +12,9 @@ module.exports = async (req, res) => {
         
         console.log('🎨 Pollinations request:', message);
         
-        // LATEST 2025 POLLINATIONS API FORMAT
-        const cleanPrompt = encodeURIComponent(message.replace(/\s+/g, ' ').trim());
-        const imageUrl = `https://pollinations.ai/p/${cleanPrompt}?width=512&height=512&model=flux&nologo=true`;
+        // CORRECT POLLINATIONS API FORMAT (from official docs)
+        const cleanPrompt = encodeURIComponent(message.trim());
+        const imageUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=512&height=512&model=flux&nologo=true&enhance=true`;
         
         console.log('✅ Generated URL:', imageUrl);
         
