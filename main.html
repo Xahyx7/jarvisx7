@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOVA AI Ultimate v7.2.1 - Foundation Intelligence</title>
+    <title>NOVA AI Ultimate</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Left Sidebar (Slim, Vertical) -->
+        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-items">
                 <div class="sidebar-item active" data-mode="chat" title="Chat">
@@ -38,43 +38,36 @@
             </div>
         </div>
 
-        <!-- Main Panel (Centered) -->
+        <!-- Main Panel -->
         <div class="main-panel">
-            <!-- Header with Glowing Logo -->
+            <!-- Panel Header with Circular Logo -->
             <div class="panel-header">
-                <div class="nova-logo-orb">N</div>
+                <!-- Logo: Replace the src with your filename (e.g., nova-logo.png) -->
+                <div class="nova-logo-orb">
+                  <img src="nova-logo.png" alt="Nova Logo" class="nova-logo-img" />
+                </div>
                 <h1 class="welcome-text"><span class="neon-nova">NOVA</span></h1>
                 <p class="subtitle">Your advanced AI assistant ready to help</p>
             </div>
 
-            <!-- Chat Messages Area -->
-            <div class="chat-area" id="messagesContainer">
-                <!-- Messages will be inserted here dynamically -->
-            </div>
+            <!-- Message history/chat area -->
+            <div class="chat-area" id="messagesContainer"></div>
 
             <!-- Typing Indicator -->
-            <div id="typingIndicator" class="typing-indicator">
+            <div id="typingIndicator" class="typing-indicator" style="display: none;">
                 <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <span></span><span></span><span></span>
                 </div>
             </div>
 
             <!-- Input Section -->
             <div class="input-section">
-                <!-- Main Search/Input Bar -->
                 <div class="search-container">
                     <form id="messageForm" class="search-form">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Ask NOVA anything..."
-                            rows="1"></textarea>
+                        <textarea id="messageInput" placeholder="Ask NOVA anything..." rows="1"></textarea>
                         <button type="submit" id="sendBtn">Send</button>
                     </form>
                 </div>
-
-                <!-- Quick Action Buttons -->
                 <div class="quick-actions">
                     <button class="action-btn">Search</button>
                     <button class="action-btn">Tutorial Materials</button>
@@ -83,11 +76,11 @@
                 </div>
             </div>
 
-            <!-- Image API Selector (Shows only in image mode) -->
+            <!-- Image API Selector (shows in image mode) -->
             <div id="image-api-selector" class="image-api-selector" style="display: none;">
-                <button class="api-btn active" data-api="pollinations" title="Pollinations API">🎨 Pollinations</button>
-                <button class="api-btn" data-api="huggingface" title="Hugging Face API">🤖 Hugging Face</button>
-                <button class="api-btn" data-api="kroki" title="Kroki Diagrams API">📊 Kroki Diagrams</button>
+                <button class="api-btn active" data-api="pollinations">🎨 Pollinations</button>
+                <button class="api-btn" data-api="huggingface">🤖 Hugging Face</button>
+                <button class="api-btn" data-api="kroki">📊 Kroki Diagrams</button>
             </div>
 
             <!-- Status Bar -->
