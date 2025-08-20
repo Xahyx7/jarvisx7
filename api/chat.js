@@ -1,9 +1,13 @@
-// /api/chat.js
+// /api/chat.js (for Vercel serverless, main = Gemini, fallback = Grok)
+
+// If using Node 18+, fetch is built-in. Otherwise, uncomment the next line:
+// import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const GROK_API_KEY = process.env.GROK_API_KEY;
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-  const GROK_API_URL = "https://api.grok.com/v1/chat"; // Replace with the real Grok endpoint if different
+  const GROK_API_URL = "https://api.grok.com/v1/chat"; // Replace with actual endpoint
 
   async function callGemini(userMessage) {
     const gRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -14,10 +18,25 @@ export default async function handler(req, res) {
       })
     });
     const data = await gRes.json();
-    if (data?.candidates && data.candidates.length > 0) {
-      return data.candidates[0].content.parts.text;
+
+    // --- SAFE PARSING: Only return if structure matches Google Gemini format:
+    if (
+      data &&
+      Array.isArray(data.candidates) && data.candidates.length > 0 &&
+      data.candidates[0].content &&
+      Array.isArray(data.candidates.content.parts) &&
+      data.candidates.content.parts.length > 0 &&
+      typeof data.candidates.content.parts.text === 'string'
+    ) {
+      return data.candidates.content.parts.text;
     }
-    throw new Error(data.error?.message || "Gemini failed");
+
+    // If error, throw readable message
+    if (data?.error) {
+      throw new Error(data.error.message || "Gemini error");
+    }
+
+    throw new Error("Gemini did not return content text");
   }
 
   async function callGrok(userMessage) {
