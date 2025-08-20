@@ -1,87 +1,49 @@
-module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    
-    try {
-        const { message = "", history = [] } = req.body;
-        if (!message) return res.status(400).json({ error: 'Message is required' });
-        
-        console.log('📨 Processing message:', message.substring(0, 50));
-        
-        const cleanHistory = Array.isArray(history) 
-            ? history.slice(-2).map(m => ({role: m.role, content: m.content})) 
-            : [];
-            
-        const messages = [
-            {role: "system", content: "You are JARVIS, Tony Stark's AI assistant."},
-            ...cleanHistory,
-            {role: "user", content: String(message)}
-        ];
-        
-        console.log('🔑 Using API key:', process.env.GROQ_API_KEY ? 'SET' : 'NOT SET');
-        
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages,
-                max_tokens: 500,
-                temperature: 0.7
-            })
-        });
-        
-        console.log('📡 Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Groq API error:', errorText);
-            throw new Error(`Groq API error: ${response.status} - ${errorText}`);
-        }
-        
-        const data = await response.json();
-        console.log('📦 Raw response keys:', Object.keys(data));
-        console.log('📦 Choices length:', data.choices?.length);
-        
-        // SIMPLIFIED VALIDATION - This is the key fix!
-        let content = null;
-        
-        if (data.choices && data.choices.length > 0) {
-            const choice = data.choices[0];
-            if (choice.message && choice.message.content) {
-                content = choice.message.content;
-            } else if (choice.text) {
-                content = choice.text;
-            } else if (choice.delta && choice.delta.content) {
-                content = choice.delta.content;
-            }
-        }
-        
-        if (!content) {
-            console.error('❌ Full response structure:', JSON.stringify(data, null, 2));
-            throw new Error("No content found in response");
-        }
-        
-        console.log('✅ Content extracted, length:', content.length);
-        
-        res.status(200).json({
-            response: content,
-            provider: "Groq (llama-3.3-70b)",
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        console.error('💥 Chat error:', error.message);
-        res.status(500).json({
-            error: "Chat failed",
-            detail: error.message
-        });
+import fetch from 'node-fetch'; // If using Node 18+, you may not need to import fetch.
+
+export default async function handler(req, res) {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GROK_API_KEY = process.env.GROK_API_KEY;
+  const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  const GROK_API_URL = "https://api.grok.com/v1/chat"; // Replace with real Grok endpoint
+
+  async function callGemini(userMessage) {
+    const gRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMessage }] }]
+      })
+    });
+    const data = await gRes.json();
+    if (data?.candidates && data.candidates.length > 0) {
+      return data.candidates[0].content.parts.text;
     }
-};
+    throw new Error(data.error?.message || "Gemini failed");
+  }
+
+  async function callGrok(userMessage) {
+    const gRes = await fetch(GROK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROK_API_KEY}`,
+      },
+      body: JSON.stringify({ prompt: userMessage })
+    });
+    const data = await gRes.json();
+    return data.text || (data.choices?.[0]?.text) || "Grok returned no response";
+  }
+
+  try {
+    const userMessage = req.body.message || "";
+    const geminiReply = await callGemini(userMessage);
+    return res.status(200).json({ response: geminiReply, provider: "Gemini" });
+  } catch (err) {
+    try {
+      const grokReply = await callGrok(req.body.message || "");
+      return res.status(200).json({ response: grokReply, provider: "Grok" });
+    } catch (err2) {
+      return res.status(500).json({ error: "Both Gemini and Grok failed.", details: [err.message, err2.message] });
+    }
+  }
+}
