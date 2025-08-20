@@ -820,3 +820,39 @@ body {
     cursor: wait;
     color: var(--accent-color);
 }
+/* Image API Selector */
+.image-api-selector {
+  display: none; /* Hidden by default */
+  gap: 12px;
+  padding: 15px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.api-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.api-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  box-shadow: var(--glow-primary);
+  transform: translateY(-1px);
+}
+
+.api-btn.active {
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-glow) 100%);
+  border-color: var(--accent-color);
+  color: #000000;
+  font-weight: 600;
+  box-shadow: var(--glow-primary);
+}
