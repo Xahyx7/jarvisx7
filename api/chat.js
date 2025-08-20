@@ -1,85 +1,84 @@
 export default async function handler(req, res) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  
-  // Use the correct Gemini model endpoint
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
-  async function callGemini(userMessage) {
-    try {
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: userMessage }]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // Check for API errors
-      if (data.error) {
-        throw new Error(`Gemini API error: ${data.error.message || 'Unknown error'}`);
-      }
-
-      // Safely extract response text
-      if (data?.candidates?.[0]?.content?.parts?.?.text) {
-        return data.candidates.content.parts.text;
-      }
-      
-      // Handle blocked or filtered content
-      if (data?.candidates?.?.finishReason === 'SAFETY') {
-        return "I cannot provide a response to that request due to safety guidelines.";
-      }
-      
-      throw new Error("No valid response from Gemini");
-      
-    } catch (error) {
-      console.error('Gemini API error:', error);
-      throw new Error(`Gemini failed: ${error.message}`);
-    }
+  // Validate API key
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ 
+      error: "Get your free API key at https://aistudio.google.com",
+      response: "Please set your free Gemini API key in environment variables.",
+      provider: "System"
+    });
   }
 
-  // Handle the request
+  // Validate message
+  const userMessage = req.body?.message?.trim();
+  if (!userMessage) {
+    return res.status(400).json({ 
+      error: "Message required",
+      response: "Please provide a message to process.",
+      provider: "System"
+    });
+  }
+
   try {
-    const userMessage = req.body?.message?.trim();
-    
-    if (!userMessage) {
-      return res.status(400).json({ 
-        error: "Message is required",
-        response: "Please provide a message to process." 
-      });
+    // Call Gemini 1.5 Flash (completely free)
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ 
+          parts: [{ text: userMessage }] 
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    if (!GEMINI_API_KEY) {
+    const data = await response.json();
+    
+    // Handle API errors
+    if (data.error) {
       return res.status(500).json({ 
-        error: "API key not configured",
-        response: "The Gemini API key is not properly configured." 
+        error: `Gemini error: ${data.error.message}`,
+        response: "I'm having technical difficulties. Please try again.",
+        provider: "Gemini 1.5 Flash (Free)"
       });
     }
 
-    // Call Gemini API
-    const geminiReply = await callGemini(userMessage);
-    
+    // Extract response safely
+    if (data?.candidates?.[0]?.content?.parts?.?.text) {
+      return res.status(200).json({ 
+        response: data.candidates.content.parts.text, 
+        provider: "Gemini 1.5 Flash (Free)",
+        success: true
+      });
+    }
+
+    // Handle safety blocks
+    if (data?.candidates?.?.finishReason === 'SAFETY') {
+      return res.status(200).json({ 
+        response: "I cannot provide a response to that request due to safety guidelines. Please try rephrasing.",
+        provider: "Gemini 1.5 Flash (Free)",
+        success: true
+      });
+    }
+
+    // Fallback
     return res.status(200).json({ 
-      response: geminiReply, 
-      provider: "Gemini",
+      response: "I'm having trouble generating a response right now. Please try again.",
+      provider: "Gemini 1.5 Flash (Free)",
       success: true
     });
 
   } catch (error) {
-    console.error('Handler error:', error);
-    
+    console.error('Gemini API Error:', error);
     return res.status(500).json({ 
       error: error.message,
-      response: `Sorry, I encountered an error: ${error.message}`,
-      provider: "Error",
-      success: false
+      response: "I'm experiencing technical difficulties. Please try again later.",
+      provider: "System"
     });
   }
 }
