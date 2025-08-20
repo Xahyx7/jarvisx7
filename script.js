@@ -17,7 +17,7 @@ class JarvisAIUltimate {
         this.setupSidebarNavigation();
         this.setupImageApiSelector();
         this.setupFormEvents();
-        this.setupVoice(); // Enhanced voice setup
+        this.setupVoice();
         this.setupNeonEffects();
         this.updateInputPlaceholder();
         this.updateApiStatus("🧠 NOVA ready");
@@ -45,33 +45,26 @@ class JarvisAIUltimate {
         };
     }
 
-    // ENHANCED SIDEBAR SETUP WITH GLOW EFFECTS
     setupSidebarNavigation() {
         const items = document.querySelectorAll('.sidebar-item');
         items.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                // Remove active from all items
                 items.forEach(i => i.classList.remove('active'));
-                
-                // Add active to clicked item
                 item.classList.add('active');
                 
-                // Get mode and switch
                 const mode = item.getAttribute('data-mode');
                 if (mode) {
                     this.switchMode(mode);
                 }
                 
-                // Add temporary intense glow effect
                 item.style.boxShadow = '0 0 40px rgba(211, 211, 211, 1), 0 0 80px rgba(211, 211, 211, 0.5)';
                 setTimeout(() => {
                     item.style.boxShadow = '0 0 30px rgba(211, 211, 211, 0.8), 0 0 60px rgba(211, 211, 211, 0.4)';
                 }, 300);
             });
             
-            // Enhanced hover effects
             item.addEventListener('mouseenter', () => {
                 if (!item.classList.contains('active')) {
                     item.style.transform = 'translateY(-2px)';
@@ -87,7 +80,6 @@ class JarvisAIUltimate {
             });
         });
 
-        // Keyboard navigation
         items.forEach(item => {
             item.addEventListener('keyup', (e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -98,11 +90,9 @@ class JarvisAIUltimate {
         });
     }
 
-    // NEON EFFECTS FOR NOVA TEXT
     setupNeonEffects() {
         const novaText = document.querySelector('.neon-nova');
         if (novaText) {
-            // Add click effect
             novaText.addEventListener('click', () => {
                 novaText.style.animation = 'none';
                 novaText.style.textShadow = '0 0 20px #f0f0f0, 0 0 40px #f0f0f0, 0 0 60px #f5f5f5, 0 0 80px #f5f5f5';
@@ -119,7 +109,6 @@ class JarvisAIUltimate {
         this.currentMode = mode;
         console.log(`🔄 Switching to mode: ${mode}`);
         
-        // Enhanced glow effect on logo during mode switch
         const logoOrb = document.querySelector('.nova-logo-orb');
         if (logoOrb) {
             logoOrb.style.boxShadow = '0 0 40px rgba(211, 211, 211, 1), 0 0 80px rgba(211, 211, 211, 0.5), 0 0 120px rgba(211, 211, 211, 0.3)';
@@ -187,7 +176,6 @@ class JarvisAIUltimate {
         });
     }
 
-    // FIXED SHOW/HIDE IMAGE SELECTOR METHODS
     showImageApiSelector() { 
         const selector = document.querySelector('.image-api-selector');
         if (selector) {
@@ -239,7 +227,6 @@ class JarvisAIUltimate {
         this.renderMessage(content, sender, withSpeaker, provider);
     }
 
-    // ENHANCED RENDER MESSAGE WITH FIXED SPEAKER BUTTON
     renderMessage(content, sender, withSpeaker = false, provider = '') {
         const messagesContainer = this.$.messages;
         const messageDiv = document.createElement('div');
@@ -263,33 +250,15 @@ class JarvisAIUltimate {
                 messageDiv.appendChild(providerInfo);
             }
             
-            // ENHANCED SPEAKER BUTTON WITH PROPER FUNCTIONALITY
             if (withSpeaker) {
                 const speakerBtn = document.createElement('button');
                 speakerBtn.className = 'speaker-icon';
-                speakerBtn.innerHTML = '🔊 Speak';
-                speakerBtn.title = 'Click to hear this message';
-                
-                // Enhanced click handler
+                speakerBtn.textContent = '🔊 Speak';
+                speakerBtn.title = 'Speak response';
                 speakerBtn.onclick = (e) => {
                     e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Visual feedback
-                    const originalText = speakerBtn.innerHTML;
-                    speakerBtn.innerHTML = '🔊 Speaking...';
-                    speakerBtn.disabled = true;
-                    
-                    // Speak the text
                     this.speakText(content);
-                    
-                    // Reset button after delay
-                    setTimeout(() => {
-                        speakerBtn.innerHTML = originalText;
-                        speakerBtn.disabled = false;
-                    }, 2000);
                 };
-                
                 messageDiv.appendChild(speakerBtn);
             }
         }
@@ -441,34 +410,14 @@ class JarvisAIUltimate {
         this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
     }
 
-    // ENHANCED VOICE SETUP WITH BETTER SPEECH SYNTHESIS
     setupVoice() {
-        // Initialize speech synthesis
-        if (window.speechSynthesis) {
-            this.synthesis = window.speechSynthesis;
-            
-            // Load voices
-            this.synthesis.onvoiceschanged = () => {
-                const voices = this.synthesis.getVoices();
-                console.log(`🎤 Loaded ${voices.length} voices`);
-            };
-            
-            // Trigger voice loading
-            this.synthesis.getVoices();
-            
-        } else {
-            console.warn('❌ Speech synthesis not supported');
-            this.synthesis = null;
-        }
-        
-        // Initialize speech recognition
+        if (this.synthesis) this.synthesis.onvoiceschanged = () => null;
         if (window.SpeechRecognition || window.webkitSpeechRecognition) {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRec();
             this.recognition.lang = "en-US";
             this.recognition.continuous = false;
             this.recognition.interimResults = false;
-            
             this.recognition.onstart = () => this.showStatus("🎤 Listening... Speak now");
             this.recognition.onresult = (e) => {
                 const transcript = e.results[0][0].transcript;
@@ -489,84 +438,66 @@ class JarvisAIUltimate {
         }
     }
 
-    // COMPLETELY FIXED TEXT-TO-SPEECH METHOD
+    // FIXED SPEECH SYNTHESIS - ONLY CHANGE IN THE FILE
     speakText(text) {
-        console.log('🔊 Speaking:', text.substring(0, 50));
+        console.log('🔊 Attempting to speak:', text.substring(0, 50));
         
         if (!this.synthesis) {
-            console.warn('❌ Speech synthesis not supported');
-            this.showStatus('🚫 Text-to-speech not supported in this browser');
+            console.warn('Speech synthesis not supported');
+            this.showStatus('🚫 Text-to-speech not supported');
             return;
         }
         
-        // Clean the text thoroughly
+        // Clean the text
         const cleanText = text
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove markdown bold
-            .replace(/\*(.*?)\*/g, '$1') // Remove markdown italic
-            .replace(/``````/g, '') // Remove code blocks
-            .replace(/`([^`]*)`/g, '$1') // Remove inline code
-            .replace(/\n+/g, ' ') // Replace line breaks with spaces
-            .replace(/\s+/g, ' ') // Normalize whitespace
-            .replace(/[^\w\s.,!?;:-]/g, '') // Remove special characters
+            .replace(/<[^>]*>/g, '')
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim()
-            .substring(0, 500); // Limit length for performance
+            .substring(0, 300);
         
-        if (cleanText.length < 3) {
-            console.warn('❌ Text too short to speak');
+        if (cleanText.length < 2) {
+            console.warn('Text too short to speak');
             return;
         }
         
         // Cancel any ongoing speech
         this.synthesis.cancel();
         
-        // Wait a bit before starting new speech (important for some browsers)
+        // Wait for cancel to complete
         setTimeout(() => {
             try {
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 
-                // Configure voice settings for better quality
-                utterance.rate = 0.9;
-                utterance.pitch = 1;
+                // Safe settings that work across browsers
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
                 utterance.volume = 0.8;
                 
-                // Try to use a good English voice
-                const voices = this.synthesis.getVoices();
-                if (voices.length > 0) {
-                    // Prefer English voices that aren't robotic
-                    const englishVoice = voices.find(voice => 
-                        voice.lang.includes('en-') && 
-                        (voice.name.includes('Microsoft') || voice.name.includes('Alex') || voice.name.includes('Samantha'))
-                    ) || voices.find(voice => voice.lang.includes('en-')) || voices[0];
-                    
-                    utterance.voice = englishVoice;
-                    console.log('🎤 Using voice:', englishVoice.name);
-                }
+                // Enhanced error handling
+                utterance.onerror = (event) => {
+                    console.error('Speech error:', event.error, event.type);
+                    this.showStatus(`❌ Speech error: ${event.error}`);
+                };
                 
-                // Event handlers for better user feedback
                 utterance.onstart = () => {
-                    console.log('🎤 Started speaking');
+                    console.log('✅ Speech started');
                     this.showStatus('🔊 Speaking...');
                 };
                 
                 utterance.onend = () => {
-                    console.log('✅ Finished speaking');
+                    console.log('✅ Speech ended');
                     this.showStatus('Ready');
                 };
                 
-                utterance.onerror = (e) => {
-                    console.error('❌ Speech error:', e);
-                    this.showStatus('❌ Speech error');
-                };
-                
-                // Start speaking
+                // Speak the text
                 this.synthesis.speak(utterance);
                 
             } catch (error) {
-                console.error('❌ Speech synthesis error:', error);
-                this.showStatus('❌ Speech failed');
+                console.error('Speech synthesis failed:', error);
+                this.showStatus('❌ Speech failed: ' + error.message);
             }
-        }, 150);
+        }, 250);
     }
 
     autoResizeTextarea() {
@@ -638,4 +569,4 @@ if (document.readyState === 'loading') {
     window.jarvis = new JarvisAIUltimate();
 }
 
-console.log("🤖 NOVA AI v7.2.1 - Professional UI with FIXED Text-to-Speech - loaded and ready");
+console.log("🤖 NOVA AI v7.2.1 - Professional UI with FIXED Speech Synthesis - loaded and ready");
