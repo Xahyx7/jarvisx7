@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  const GROK_API_KEY = process.env.GROK_API_KEY;
+  
+  // Use the correct Gemini model endpoint
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
   async function callGemini(userMessage) {
@@ -9,90 +10,76 @@ export default async function handler(req, res) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: userMessage }] }]
+          contents: [{
+            parts: [{ text: userMessage }]
+          }]
         })
       });
 
-      const data = await response.json();
-      
-      // Check if API returned an error
-      if (data.error) {
-        throw new Error(`Gemini API error: ${data.error.message}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Safely check response structure
+      const data = await response.json();
+      
+      // Check for API errors
+      if (data.error) {
+        throw new Error(`Gemini API error: ${data.error.message || 'Unknown error'}`);
+      }
+
+      // Safely extract response text
       if (data?.candidates?.[0]?.content?.parts?.?.text) {
         return data.candidates.content.parts.text;
       }
       
-      throw new Error("Invalid Gemini response structure");
+      // Handle blocked or filtered content
+      if (data?.candidates?.?.finishReason === 'SAFETY') {
+        return "I cannot provide a response to that request due to safety guidelines.";
+      }
+      
+      throw new Error("No valid response from Gemini");
       
     } catch (error) {
+      console.error('Gemini API error:', error);
       throw new Error(`Gemini failed: ${error.message}`);
     }
   }
 
-  async function callGrok(userMessage) {
-    try {
-      const response = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: userMessage }],
-          model: "grok-beta"
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(`Grok API error: ${data.error.message}`);
-      }
-
-      if (data?.choices?.?.message?.content) {
-        return data.choices.message.content;
-      }
-      
-      throw new Error("Invalid Grok response structure");
-      
-    } catch (error) {
-      throw new Error(`Grok failed: ${error.message}`);
-    }
-  }
-
+  // Handle the request
   try {
-    const userMessage = req.body?.message || "";
+    const userMessage = req.body?.message?.trim();
+    
     if (!userMessage) {
-      return res.status(400).json({ error: "Message is required" });
+      return res.status(400).json({ 
+        error: "Message is required",
+        response: "Please provide a message to process." 
+      });
     }
 
-    // Try Gemini first
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ 
+        error: "API key not configured",
+        response: "The Gemini API key is not properly configured." 
+      });
+    }
+
+    // Call Gemini API
     const geminiReply = await callGemini(userMessage);
+    
     return res.status(200).json({ 
       response: geminiReply, 
-      provider: "Gemini" 
+      provider: "Gemini",
+      success: true
     });
 
-  } catch (geminiError) {
-    console.warn("Gemini failed, trying Grok:", geminiError.message);
+  } catch (error) {
+    console.error('Handler error:', error);
     
-    try {
-      // Fallback to Grok
-      const grokReply = await callGrok(req.body?.message || "");
-      return res.status(200).json({ 
-        response: grokReply, 
-        provider: "Grok" 
-      });
-
-    } catch (grokError) {
-      console.error("Both APIs failed:", { geminiError, grokError });
-      return res.status(500).json({ 
-        error: "Both Gemini and Grok failed", 
-        details: [geminiError.message, grokError.message] 
-      });
-    }
+    return res.status(500).json({ 
+      error: error.message,
+      response: `Sorry, I encountered an error: ${error.message}`,
+      provider: "Error",
+      success: false
+    });
   }
 }
