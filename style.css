@@ -788,3 +788,35 @@ body {
     font-size: 11px; /* smaller */
     font-weight: 500;
 }
+/* Enhanced Speaker Button */
+.speaker-icon {
+    background: rgba(192, 192, 192, 0.15);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    display: block;
+    width: fit-content;
+}
+
+.speaker-icon:hover:not(:disabled) {
+    background: rgba(192, 192, 192, 0.25);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: var(--glow-primary);
+    transform: translateY(-1px);
+}
+
+.speaker-icon:active {
+    transform: translateY(0);
+}
+
+.speaker-icon:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    color: var(--accent-color);
+}
