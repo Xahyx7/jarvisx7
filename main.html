@@ -1,70 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOVA AI Ultimate</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA AI Ultimate v7.2.1 - Foundation Intelligence</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-container">
-    <div class="sidebar">
-      <div class="sidebar-items">
-        <div class="sidebar-item active" data-mode="chat" title="Chat">
-          <span class="item-icon">💬</span>
-          <span class="item-text">Chat</span>
+    <div class="app-container">
+        <!-- Left Sidebar (Slim, Vertical) -->
+        <div class="sidebar">
+            <div class="sidebar-items">
+                <div class="sidebar-item active" data-mode="chat" title="Chat">
+                    <span class="item-icon">💬</span>
+                    <span class="item-text">Chat</span>
+                </div>
+                <div class="sidebar-item" data-mode="search" title="Web Search">
+                    <span class="item-icon">🔍</span>
+                    <span class="item-text">Search</span>
+                </div>
+                <div class="sidebar-item" data-mode="image" title="Image Generation">
+                    <span class="item-icon">🎨</span>
+                    <span class="item-text">Images</span>
+                </div>
+                <div class="sidebar-item" data-mode="analytics" title="Analytics">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Analytics</span>
+                </div>
+                <div class="sidebar-item" data-mode="settings" title="Settings">
+                    <span class="item-icon">⚙️</span>
+                    <span class="item-text">Settings</span>
+                </div>
+                <div class="sidebar-item" data-mode="help" title="Help">
+                    <span class="item-icon">❓</span>
+                    <span class="item-text">Help</span>
+                </div>
+            </div>
         </div>
-        <div class="sidebar-item" data-mode="search" title="Web Search">
-          <span class="item-icon">🔍</span>
-          <span class="item-text">Search</span>
+
+        <!-- Main Panel (Centered) -->
+        <div class="main-panel">
+            <!-- Header with Glowing Logo -->
+            <div class="panel-header">
+                <div class="nova-logo-orb">N</div>
+                <h1 class="welcome-text"><span class="neon-nova">NOVA</span></h1>
+                <p class="subtitle">Your advanced AI assistant ready to help</p>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="chat-area" id="messagesContainer">
+                <!-- Messages will be inserted here dynamically -->
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typingIndicator" class="typing-indicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <!-- Main Search/Input Bar -->
+                <div class="search-container">
+                    <form id="messageForm" class="search-form">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="Ask NOVA anything..."
+                            rows="1"></textarea>
+                        <button type="submit" id="sendBtn">Send</button>
+                    </form>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="quick-actions">
+                    <button class="action-btn">Search</button>
+                    <button class="action-btn">Tutorial Materials</button>
+                    <button class="action-btn">Calculation</button>
+                    <button class="action-btn">More</button>
+                </div>
+            </div>
+
+            <!-- Image API Selector (Shows only in image mode) -->
+            <div id="image-api-selector" class="image-api-selector" style="display: none;">
+                <button class="api-btn active" data-api="pollinations" title="Pollinations API">🎨 Pollinations</button>
+                <button class="api-btn" data-api="huggingface" title="Hugging Face API">🤖 Hugging Face</button>
+                <button class="api-btn" data-api="kroki" title="Kroki Diagrams API">📊 Kroki Diagrams</button>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span id="statusText">Ready</span>
+                <button id="clearHistoryBtn">Clear Chat</button>
+                <span id="apiStatus">🧠 NOVA ready</span>
+            </div>
         </div>
-        <div class="sidebar-item" data-mode="image" title="Image Generation">
-          <span class="item-icon">🎨</span>
-          <span class="item-text">Images</span>
-        </div>
-        <div class="sidebar-item" data-mode="analytics" title="Analytics">
-          <span class="item-icon">📊</span>
-          <span class="item-text">Analytics</span>
-        </div>
-        <div class="sidebar-item" data-mode="settings" title="Settings">
-          <span class="item-icon">⚙️</span>
-          <span class="item-text">Settings</span>
-        </div>
-        <div class="sidebar-item" data-mode="help" title="Help">
-          <span class="item-icon">❓</span>
-          <span class="item-text">Help</span>
-        </div>
-      </div>
     </div>
 
-    <div class="main-panel">
-      <div class="panel-header">
-        <div class="nova-logo-orb">N</div>
-        <h1 class="welcome-text"><span class="neon-nova">NOVA</span></h1>
-        <p class="subtitle">Your advanced AI assistant ready to help</p>
-      </div>
-
-      <div class="chat-area" id="messagesContainer"></div>
-      <div class="input-section">
-        <div class="search-container">
-          <form id="messageForm" class="search-form">
-            <textarea id="messageInput" placeholder="Ask NOVA anything..." rows="1"></textarea>
-            <button type="submit" id="sendBtn">Send</button>
-          </form>
-        </div>
-        <div class="quick-actions">
-          <button class="action-btn">Search</button>
-          <button class="action-btn">Tutorial Materials</button>
-          <button class="action-btn">Calculation</button>
-          <button class="action-btn">More</button>
-        </div>
-      </div>
-      <div class="status-bar">
-        <span id="statusText">Ready</span>
-        <button id="clearHistoryBtn">Clear Chat</button>
-      </div>
-    </div>
-  </div>
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
