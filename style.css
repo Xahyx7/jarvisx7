@@ -856,3 +856,26 @@ body {
   font-weight: 600;
   box-shadow: var(--glow-primary);
 }
+.nova-logo-orb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none; /* Remove or update if needed */
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 10px auto;
+  box-shadow: 0 0 32px #7e53ff55, 0 0 4px #fff;
+  /* Optionally, add a gradient backdrop:
+  background: radial-gradient(circle, #2a2545 70%, #14102e 100%);
+  */
+}
+.nova-logo-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: transparent;
+  /* Optionally, soft shadow or glow for more effect */
+  box-shadow: 0 0 12px #9b7eff77, 0 0 2px #fff;
+}
