@@ -46,8 +46,8 @@ module.exports = async function handler(req, res) {
     console.log('📥 Gemini response received');
     
     // ✅ FIXED: Correct optional chaining with proper array access
-    if (data?.candidates?.[0]?.content?.parts?.?.text) {
-      const reply = data.candidates.content.parts.text;
+    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const reply = data.candidates[0].content.parts[0].text;
       console.log('✅ Success:', reply.substring(0, 50));
       return res.status(200).json({ 
         response: reply, 
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Handle safety blocks
-    if (data?.candidates?.?.finishReason === 'SAFETY') {
+    if (data?.candidates?.[0]?.finishReason === 'SAFETY') {
       return res.status(200).json({ 
         response: "I can't respond to that request due to safety guidelines. Please try rephrasing.",
         provider: "Gemini 1.5 Flash (Free)"
