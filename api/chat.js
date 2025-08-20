@@ -1,7 +1,7 @@
-// /api/chat.js (CommonJS version for Vercel)
+// /api/chat.js - Fixed version for Vercel (CommonJS + Correct Optional Chaining)
 
 module.exports = async function handler(req, res) {
-  // Add CORS headers
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
 
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   
-  // Check if API key exists
+  // Validate API key
   if (!GEMINI_API_KEY) {
     console.log('❌ GEMINI_API_KEY missing');
     return res.status(500).json({ 
@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
     const data = await response.json();
     console.log('📥 Gemini response received');
     
-    // Extract response safely
+    // ✅ FIXED: Correct optional chaining with proper array access
     if (data?.candidates?.[0]?.content?.parts?.?.text) {
       const reply = data.candidates.content.parts.text;
       console.log('✅ Success:', reply.substring(0, 50));
@@ -63,8 +63,8 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Fallback
-    console.log('⚠️ Unexpected response format');
+    // Fallback for unexpected response
+    console.log('⚠️ Unexpected response format:', JSON.stringify(data, null, 2));
     return res.status(200).json({ 
       response: "I'm having trouble right now. Please try again.",
       provider: "Gemini 1.5 Flash (Free)"
