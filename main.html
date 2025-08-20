@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOVA AI Ultimate v7.2.1 - Foundation Intelligence</title>
+    <title>NOVA AI Ultimate</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Left Sidebar (Slim, Vertical) -->
         <div class="sidebar">
             <div class="sidebar-items">
                 <div class="sidebar-item active" data-mode="chat" title="Chat">
@@ -37,44 +36,25 @@
                 </div>
             </div>
         </div>
-
-        <!-- Main Panel (Centered) -->
         <div class="main-panel">
-            <!-- Header with Glowing Logo -->
             <div class="panel-header">
                 <div class="nova-logo-orb">N</div>
                 <h1 class="welcome-text"><span class="neon-nova">NOVA</span></h1>
                 <p class="subtitle">Your advanced AI assistant ready to help</p>
             </div>
-
-            <!-- Chat Messages Area -->
-            <div class="chat-area" id="messagesContainer">
-                <!-- Messages will be inserted here -->
-            </div>
-
-            <!-- Typing Indicator -->
-            <div id="typingIndicator" class="typing-indicator">
+            <div class="chat-area" id="messagesContainer"></div>
+            <div id="typingIndicator" class="typing-indicator" style="display: none;">
                 <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <span></span><span></span><span></span>
                 </div>
             </div>
-
-            <!-- Input Section -->
             <div class="input-section">
-                <!-- Main Search/Input Bar -->
                 <div class="search-container">
                     <form id="messageForm" class="search-form">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Ask NOVA anything..."
-                            rows="1"></textarea>
+                        <textarea id="messageInput" placeholder="Ask NOVA anything..." rows="1"></textarea>
                         <button type="submit" id="sendBtn">Send</button>
                     </form>
                 </div>
-
-                <!-- Quick Action Buttons -->
                 <div class="quick-actions">
                     <button class="action-btn">Search</button>
                     <button class="action-btn">Tutorial Materials</button>
@@ -82,15 +62,11 @@
                     <button class="action-btn">More</button>
                 </div>
             </div>
-
-            <!-- Image API Selector (Hidden by default) -->
             <div id="image-api-selector" class="image-api-selector">
                 <button class="api-btn active" data-api="pollinations">Pollinations</button>
                 <button class="api-btn" data-api="huggingface">Hugging Face</button>
                 <button class="api-btn" data-api="kroki">Kroki Diagrams</button>
             </div>
-
-            <!-- Status Bar -->
             <div class="status-bar">
                 <span id="statusText">Ready</span>
                 <button id="clearHistoryBtn">Clear Chat</button>
@@ -98,7 +74,6 @@
             </div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
