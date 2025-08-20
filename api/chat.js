@@ -1,10 +1,9 @@
-import fetch from 'node-fetch'; // If using Node 18+, you may not need to import fetch.
-
+// /api/chat.js
 export default async function handler(req, res) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const GROK_API_KEY = process.env.GROK_API_KEY;
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-  const GROK_API_URL = "https://api.grok.com/v1/chat"; // Replace with real Grok endpoint
+  const GROK_API_URL = "https://api.grok.com/v1/chat"; // Replace with the real Grok endpoint if different
 
   async function callGemini(userMessage) {
     const gRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -35,12 +34,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userMessage = req.body.message || "";
+    const userMessage = req.body?.message || "";
     const geminiReply = await callGemini(userMessage);
     return res.status(200).json({ response: geminiReply, provider: "Gemini" });
   } catch (err) {
     try {
-      const grokReply = await callGrok(req.body.message || "");
+      const grokReply = await callGrok(req.body?.message || "");
       return res.status(200).json({ response: grokReply, provider: "Grok" });
     } catch (err2) {
       return res.status(500).json({ error: "Both Gemini and Grok failed.", details: [err.message, err2.message] });
