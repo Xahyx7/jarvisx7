@@ -1,84 +1,80 @@
-export default async function handler(req, res) {
+// /api/chat.js (CommonJS version for Vercel)
+
+module.exports = async function handler(req, res) {
+  // Add CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
-  // Validate API key
+  
+  // Check if API key exists
   if (!GEMINI_API_KEY) {
+    console.log('❌ GEMINI_API_KEY missing');
     return res.status(500).json({ 
-      error: "Get your free API key at https://aistudio.google.com",
-      response: "Please set your free Gemini API key in environment variables.",
-      provider: "System"
+      error: "API key missing",
+      response: "Go to aistudio.google.com to get your free API key, then add it to Vercel environment variables as GEMINI_API_KEY"
     });
   }
 
-  // Validate message
-  const userMessage = req.body?.message?.trim();
+  const userMessage = req.body?.message;
   if (!userMessage) {
+    console.log('❌ No message provided');
     return res.status(400).json({ 
-      error: "Message required",
-      response: "Please provide a message to process.",
-      provider: "System"
+      error: "No message",
+      response: "Please provide a message."
     });
   }
+
+  console.log('📤 Sending to Gemini:', userMessage.substring(0, 50));
 
   try {
-    // Call Gemini 1.5 Flash (completely free)
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // Use Gemini 1.5 Flash (completely free)
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ 
-          parts: [{ text: userMessage }] 
-        }]
+        contents: [{ parts: [{ text: userMessage }] }]
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
     const data = await response.json();
+    console.log('📥 Gemini response received');
     
-    // Handle API errors
-    if (data.error) {
-      return res.status(500).json({ 
-        error: `Gemini error: ${data.error.message}`,
-        response: "I'm having technical difficulties. Please try again.",
-        provider: "Gemini 1.5 Flash (Free)"
-      });
-    }
-
     // Extract response safely
     if (data?.candidates?.[0]?.content?.parts?.?.text) {
+      const reply = data.candidates.content.parts.text;
+      console.log('✅ Success:', reply.substring(0, 50));
       return res.status(200).json({ 
-        response: data.candidates.content.parts.text, 
-        provider: "Gemini 1.5 Flash (Free)",
-        success: true
+        response: reply, 
+        provider: "Gemini 1.5 Flash (Free)"
       });
     }
 
     // Handle safety blocks
     if (data?.candidates?.?.finishReason === 'SAFETY') {
       return res.status(200).json({ 
-        response: "I cannot provide a response to that request due to safety guidelines. Please try rephrasing.",
-        provider: "Gemini 1.5 Flash (Free)",
-        success: true
+        response: "I can't respond to that request due to safety guidelines. Please try rephrasing.",
+        provider: "Gemini 1.5 Flash (Free)"
       });
     }
 
     // Fallback
+    console.log('⚠️ Unexpected response format');
     return res.status(200).json({ 
-      response: "I'm having trouble generating a response right now. Please try again.",
-      provider: "Gemini 1.5 Flash (Free)",
-      success: true
+      response: "I'm having trouble right now. Please try again.",
+      provider: "Gemini 1.5 Flash (Free)"
     });
 
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('❌ Error:', error);
     return res.status(500).json({ 
       error: error.message,
-      response: "I'm experiencing technical difficulties. Please try again later.",
-      provider: "System"
+      response: "Technical difficulties. Please try again."
     });
   }
-}
+};
