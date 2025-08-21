@@ -9,6 +9,7 @@ class JarvisAIUltimate {
         this.recognition = null;
         this.typewriterUsed = { chat: false, search: false, image: false };
         this.shimmerTimeout = null;
+        this.$ = {};
         this.init();
     }
 
@@ -30,12 +31,13 @@ class JarvisAIUltimate {
             this.showHero();
         } else {
             this.collapseHeroThenHide();
+            setTimeout(() => this.scrollToBottom(), 200);
         }
     }
 
     async waitForDOM() {
         if (document.readyState === "loading") {
-            return new Promise(res => document.addEventListener("DOMContentLoaded", res));
+            return new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve));
         }
     }
 
@@ -49,20 +51,21 @@ class JarvisAIUltimate {
             apiSelector: document.querySelector('.image-api-selector'),
             apiStatus: document.getElementById('apiStatus'),
             sidebar: document.querySelector('.sidebar'),
+            sidebarItems: document.querySelectorAll('.sidebar-item'),
             statusBar: document.getElementById('statusText'),
             clearBtn: document.getElementById('clearHistoryBtn'),
             hero: document.getElementById('novaHero'),
-            imageShimmer: document.getElementById('imageShimmer')
+            imageShimmer: document.getElementById('imageShimmer'),
+            chatContainer: document.querySelector('.chat-container')
         };
     }
 
     setupSidebarNavigation() {
-        const items = document.querySelectorAll('.sidebar-item');
-        items.forEach(item => {
+        this.$.sidebarItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                items.forEach(i => i.classList.remove('active'));
+                this.$.sidebarItems.forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 
                 const mode = item.getAttribute('data-mode');
@@ -71,21 +74,6 @@ class JarvisAIUltimate {
                 }
             });
         });
-    }
-
-    setupNeonEffects() {
-        const novaText = document.querySelector('.neon-nova');
-        if (novaText) {
-            novaText.addEventListener('click', () => {
-                novaText.style.animation = 'none';
-                novaText.style.textShadow = '0 0 20px #f0f0f0, 0 0 40px #f0f0f0, 0 0 60px #f5f5f5, 0 0 80px #f5f5f5';
-                
-                setTimeout(() => {
-                    novaText.style.animation = 'neonPulse 2s ease-in-out infinite alternate';
-                    novaText.style.textShadow = '';
-                }, 1000);
-            });
-        }
     }
 
     switchMode(mode) {
@@ -109,7 +97,7 @@ class JarvisAIUltimate {
                 this.showImageApiSelector();
                 this.showStatus("Image Generator Ready");
                 this.updateApiStatus("🎨 " + this.currentImageAPI);
-                this.addModeMessage("🎨 Image Mode Activated! Pick a style above and type what to generate.", mode);
+                this.addModeMessage("🎨 Image Mode Activated! Pick a style above and describe what to generate.", mode);
                 break;
             case 'settings':
                 this.hideImageApiSelector();
@@ -159,34 +147,126 @@ class JarvisAIUltimate {
     }
 
     showImageApiSelector() { 
-        const selector = document.querySelector('.image-api-selector');
-        if (selector) {
-            selector.style.display = 'flex';
+        if (this.$.apiSelector) {
+            this.$.apiSelector.style.display = 'flex';
         }
     }
 
     hideImageApiSelector() { 
-        const selector = document.querySelector('.image-api-selector');
-        if (selector) {
-            selector.style.display = 'none';
+        if (this.$.apiSelector) {
+            this.$.apiSelector.style.display = 'none';
         }
     }
 
-    // Hero show/hide methods
+    setupFormEvents() {
+        this.$.messageForm.addEventListener('submit', e => {
+            e.preventDefault();
+            this.processUserMessage();
+        });
+        
+        this.$.sendBtn.addEventListener('click', e => {
+            e.preventDefault();
+            this.processUserMessage();
+        });
+        
+        this.$.messageInput.addEventListener('input', () => {
+            this.updateSendButton();
+            this.autoResizeTextarea();
+        });
+        
+        this.$.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.processUserMessage();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
+                e.preventDefault();
+                this.startVoiceRecognition();
+            }
+        });
+        
+        this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
+    }
+
+    setupVoice() {
+        if (this.synthesis) {
+            this.synthesis.onvoiceschanged = () => {
+                const voices = this.synthesis.getVoices();
+                console.log(`🎤 Loaded ${voices.length} voices`);
+            };
+            this.synthesis.getVoices();
+        } else {
+            console.warn('❌ Speech synthesis not supported');
+            this.synthesis = null;
+        }
+        
+        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRec();
+            this.recognition.lang = "en-US";
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            
+            this.recognition.onstart = () => this.showStatus("🎤 Listening... Speak now");
+            this.recognition.onresult = (e) => {
+                const transcript = e.results[0][0].transcript;
+                this.$.messageInput.value = transcript;
+                this.updateSendButton();
+                this.$.messageInput.focus();
+                this.showStatus('Voice input captured');
+            };
+            this.recognition.onerror = () => this.showStatus('❌ Speech recognition error');
+            this.recognition.onend = () => this.showStatus('Ready');
+        }
+    }
+
+    setupNeonEffects() {
+        const novaText = document.querySelector('.neon-nova');
+        if (novaText) {
+            novaText.addEventListener('click', () => {
+                novaText.style.animation = 'none';
+                novaText.style.textShadow = '0 0 20px #f0f0f0, 0 0 40px #f0f0f0, 0 0 60px #f5f5f5, 0 0 80px #f5f5f5';
+                
+                setTimeout(() => {
+                    novaText.style.animation = 'neonPulse 2s ease-in-out infinite alternate';
+                    novaText.style.textShadow = '';
+                }, 1000);
+            });
+        }
+    }
+
+    // Hero show/hide with chat container animation
     showHero() {
         if (!this.$.hero) return;
+        
         this.$.hero.classList.remove('hidden', 'collapsing');
         this.$.hero.classList.add('visible');
+        
+        // Adjust chat container padding for hero space
+        if (this.$.chatContainer) {
+            this.$.chatContainer.classList.add('hero-visible');
+            this.$.chatContainer.classList.remove('hero-hidden');
+        }
     }
 
     collapseHeroThenHide() {
         if (!this.$.hero) return;
+        
         this.$.hero.classList.remove('visible');
         this.$.hero.classList.add('collapsing');
+        
+        // Expand chat container immediately
+        if (this.$.chatContainer) {
+            this.$.chatContainer.classList.remove('hero-visible');
+            this.$.chatContainer.classList.add('hero-hidden');
+        }
+        
         setTimeout(() => {
-            this.$.hero.classList.remove('collapsing');
-            this.$.hero.classList.add('hidden');
-        }, 300);
+            if (this.$.hero) {
+                this.$.hero.classList.remove('collapsing');
+                this.$.hero.classList.add('hidden');
+            }
+        }, 400);
     }
 
     // Image shimmer methods
@@ -196,7 +276,6 @@ class JarvisAIUltimate {
         this.$.imageShimmer.classList.remove('fade-out');
         this.$.imageShimmer.classList.add('fade-in');
         
-        // Auto-hide after 60 seconds
         clearTimeout(this.shimmerTimeout);
         this.shimmerTimeout = setTimeout(() => this.hideImageShimmer(), 60000);
     }
@@ -228,13 +307,84 @@ class JarvisAIUltimate {
         });
     }
 
+    startVoiceRecognition() { 
+        if (this.recognition) {
+            this.recognition.start();
+        } else {
+            this.showStatus('🚫 Voice recognition not supported');
+        }
+    }
+
+    speakText(text) {
+        console.log('🔊 Attempting to speak:', text.substring(0, 50));
+        
+        if (!this.synthesis) {
+            console.warn('Speech synthesis not supported');
+            this.showStatus('🚫 Text-to-speech not supported');
+            return;
+        }
+        
+        const cleanText = text
+            .replace(/<[^>]*>/g, '')
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 300);
+        
+        if (cleanText.length < 2) {
+            console.warn('Text too short to speak');
+            return;
+        }
+        
+        this.synthesis.cancel();
+        
+        setTimeout(() => {
+            try {
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.volume = 0.8;
+                
+                utterance.onerror = (event) => {
+                    console.error('Speech error:', event.error, event.type);
+                    this.showStatus(`❌ Speech error: ${event.error}`);
+                };
+                
+                utterance.onstart = () => {
+                    console.log('✅ Speech started');
+                    this.showStatus('🔊 Speaking...');
+                };
+                
+                utterance.onend = () => {
+                    console.log('✅ Speech ended');
+                    this.showStatus('Ready');
+                };
+                
+                this.synthesis.speak(utterance);
+                
+            } catch (error) {
+                console.error('Speech synthesis failed:', error);
+                this.showStatus('❌ Speech failed: ' + error.message);
+            }
+        }, 250);
+    }
+
     loadConversationHistory() {
-        const saved = localStorage.getItem('jarvis_history');
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem('jarvis_history');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Error loading conversation history:', error);
+            return [];
+        }
     }
 
     saveConversationHistory() {
-        localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
+        try {
+            localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
+        } catch (error) {
+            console.error('Error saving conversation history:', error);
+        }
     }
 
     clearConversationHistory() {
@@ -250,74 +400,111 @@ class JarvisAIUltimate {
     }
 
     renderAllMessages() {
-        if (!this.$?.messages) return;
+        if (!this.$.messages) return;
         this.$.messages.innerHTML = '';
-        for (const msg of this.conversationHistory) {
-            this.renderMessage(msg.content, msg.role, false, msg.provider);
-        }
+        
+        this.conversationHistory.forEach(msg => {
+            this.renderMessageElement(msg, false, {});
+        });
+        
+        setTimeout(() => this.scrollToBottom(), 100);
     }
 
     addMessage(content, sender, withSpeaker = false, provider = '', opts = {}) {
-        this.conversationHistory.push({
+        const message = {
             role: sender === 'user' ? 'user' : 'assistant',
             content,
             provider,
             timestamp: new Date().toISOString()
-        });
+        };
+        
+        this.conversationHistory.push(message);
         this.saveConversationHistory();
-        this.renderMessage(content, sender, withSpeaker, provider, opts);
+        this.renderMessageElement(message, withSpeaker, opts);
     }
 
-    async renderMessage(content, sender, withSpeaker = false, provider = '', opts = {}) {
-        const messagesContainer = this.$.messages;
+    async renderMessageElement(message, withSpeaker = false, opts = {}) {
+        const { content, role, provider } = message;
+        const container = this.$.messages;
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'jarvis-message'}`;
+        messageDiv.className = `message ${role === 'user' ? 'user-message' : 'jarvis-message'}`;
+        
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
         
-        if (sender === 'user') {
-            messageContent.textContent = content;
-        } else {
-            if (content.startsWith('<img')) {
-                messageContent.innerHTML = content;
-            } else {
-                if (opts.typewriter) {
-                    messageContent.textContent = '';
-                    messageDiv.appendChild(messageContent);
-                    messagesContainer.appendChild(messageDiv);
-                    this.scrollToBottom();
-                    await this.typewriterRender(messageContent, content, opts.speed || 20);
-                } else {
-                    messageContent.innerHTML = content.replace(/\n/g, '<br>');
-                }
-            }
+        const isImage = typeof content === 'string' && content.trim().startsWith('<img');
+        
+        if (role === 'user' || isImage) {
+            messageContent.innerHTML = role === 'user' ? this.escapeHtml(content) : content;
+            messageDiv.appendChild(messageContent);
+            container.appendChild(messageDiv);
+            this.scrollToBottom();
+            return;
+        }
+        
+        // Assistant text message
+        if (opts.typewriter) {
+            messageContent.textContent = '';
+            messageDiv.appendChild(messageContent);
+            container.appendChild(messageDiv);
+            this.scrollToBottom();
             
-            if (provider) {
-                const providerInfo = document.createElement('div');
-                providerInfo.className = 'provider-info';
-                providerInfo.textContent = `Provider: ${provider}`;
-                messageDiv.appendChild(providerInfo);
-            }
+            await this.typewriterRender(messageContent, content, opts.speed || 20);
             
             if (withSpeaker) {
-                const speakerBtn = document.createElement('button');
-                speakerBtn.className = 'speaker-icon';
-                speakerBtn.textContent = '🔊 Speak';
-                speakerBtn.title = 'Speak response';
-                speakerBtn.onclick = (e) => {
-                    e.preventDefault();
-                    this.speakText(content);
-                };
-                messageDiv.appendChild(speakerBtn);
+                this.addSpeakerButton(messageDiv, content);
             }
+            if (provider) {
+                this.addProviderBadge(messageDiv, provider);
+            }
+            this.scrollToBottom();
+            return;
         }
         
-        if (!opts.typewriter) {
-            messageDiv.appendChild(messageContent);
-            messagesContainer.appendChild(messageDiv);
+        messageContent.innerHTML = this.escapeHtml(content).replace(/\n/g, '<br>');
+        messageDiv.appendChild(messageContent);
+        
+        if (withSpeaker) {
+            this.addSpeakerButton(messageDiv, content);
+        }
+        if (provider) {
+            this.addProviderBadge(messageDiv, provider);
         }
         
+        container.appendChild(messageDiv);
         this.scrollToBottom();
+    }
+
+    addSpeakerButton(container, content) {
+        const speakerBtn = document.createElement('button');
+        speakerBtn.className = 'speaker-icon';
+        speakerBtn.textContent = '🔊 Speak';
+        speakerBtn.title = 'Speak response';
+        speakerBtn.onclick = (e) => {
+            e.preventDefault();
+            this.speakText(content);
+        };
+        container.appendChild(speakerBtn);
+    }
+
+    addProviderBadge(container, provider) {
+        const providerInfo = document.createElement('div');
+        providerInfo.className = 'provider-info';
+        providerInfo.textContent = `Provider: ${provider}`;
+        container.appendChild(providerInfo);
+    }
+
+    escapeHtml(text = '') {
+        return text.replace(/[&<>"']/g, function(match) {
+            const entities = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return entities[match];
+        });
     }
 
     async processUserMessage() {
@@ -427,7 +614,7 @@ class JarvisAIUltimate {
         
         const payload = { 
             message: message, 
-            history: this.conversationHistory.slice(-4), 
+            history: this.conversationHistory.slice(-6), // Keep last 6 messages for context
             task: task 
         };
         
@@ -450,129 +637,6 @@ class JarvisAIUltimate {
         return result;
     }
 
-    setupFormEvents() {
-        this.$.messageForm.addEventListener('submit', e => {
-            e.preventDefault();
-            this.processUserMessage();
-        });
-        
-        this.$.sendBtn.addEventListener('click', e => {
-            e.preventDefault();
-            this.processUserMessage();
-        });
-        
-        this.$.messageInput.addEventListener('input', () => {
-            this.updateSendButton();
-            this.autoResizeTextarea();
-        });
-        
-        this.$.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.processUserMessage();
-            }
-            if (e.ctrlKey && e.code === 'Space') {
-                e.preventDefault();
-                this.startVoiceRecognition();
-            }
-        });
-        
-        this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
-    }
-
-    setupVoice() {
-        if (this.synthesis) {
-            this.synthesis.onvoiceschanged = () => {
-                const voices = this.synthesis.getVoices();
-                console.log(`🎤 Loaded ${voices.length} voices`);
-            };
-            this.synthesis.getVoices();
-        } else {
-            console.warn('❌ Speech synthesis not supported');
-            this.synthesis = null;
-        }
-        
-        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRec();
-            this.recognition.lang = "en-US";
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            
-            this.recognition.onstart = () => this.showStatus("🎤 Listening... Speak now");
-            this.recognition.onresult = (e) => {
-                const transcript = e.results[0][0].transcript;
-                this.$.messageInput.value = transcript;
-                this.updateSendButton();
-                this.$.messageInput.focus();
-            };
-            this.recognition.onerror = () => this.showStatus('❌ Speech recognition error');
-            this.recognition.onend = () => this.showStatus('Ready');
-        }
-    }
-
-    startVoiceRecognition() { 
-        if (this.recognition) {
-            this.recognition.start();
-        } else {
-            this.showStatus('🚫 Voice recognition not supported');
-        }
-    }
-
-    speakText(text) {
-        console.log('🔊 Attempting to speak:', text.substring(0, 50));
-        
-        if (!this.synthesis) {
-            console.warn('Speech synthesis not supported');
-            this.showStatus('🚫 Text-to-speech not supported');
-            return;
-        }
-        
-        const cleanText = text
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 300);
-        
-        if (cleanText.length < 2) {
-            console.warn('Text too short to speak');
-            return;
-        }
-        
-        this.synthesis.cancel();
-        
-        setTimeout(() => {
-            try {
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                utterance.volume = 0.8;
-                
-                utterance.onerror = (event) => {
-                    console.error('Speech error:', event.error, event.type);
-                    this.showStatus(`❌ Speech error: ${event.error}`);
-                };
-                
-                utterance.onstart = () => {
-                    console.log('✅ Speech started');
-                    this.showStatus('🔊 Speaking...');
-                };
-                
-                utterance.onend = () => {
-                    console.log('✅ Speech ended');
-                    this.showStatus('Ready');
-                };
-                
-                this.synthesis.speak(utterance);
-                
-            } catch (error) {
-                console.error('Speech synthesis failed:', error);
-                this.showStatus('❌ Speech failed: ' + error.message);
-            }
-        }, 250);
-    }
-
     autoResizeTextarea() {
         const area = this.$.messageInput;
         area.style.height = 'auto';
@@ -586,60 +650,67 @@ class JarvisAIUltimate {
     }
 
     updateInputPlaceholder() {
-        let p = "";
+        let placeholder = "";
         switch (this.currentMode) {
             case 'search':
-                p = "🔍 What would you like to search for on the web?";
+                placeholder = "🔍 What would you like to search for on the web?";
                 break;
             case 'image':
-                if (this.currentImageAPI === 'kroki') p = "📊 Describe a diagram (e.g., flowchart, sequence diagram)";
-                else if (this.currentImageAPI === 'huggingface') p = "🤖 Describe an image to generate...";
-                else p = "🎨 What image would you like to generate?";
+                if (this.currentImageAPI === 'kroki') placeholder = "📊 Describe a diagram (e.g., flowchart, sequence diagram)";
+                else if (this.currentImageAPI === 'huggingface') placeholder = "🤖 Describe an image to generate...";
+                else placeholder = "🎨 What image would you like to generate?";
                 break;
             case 'settings':
-                p = "⚙️ Configure NOVA settings...";
+                placeholder = "⚙️ Configure NOVA settings...";
                 break;
             case 'analytics':
-                p = "📊 Ask about usage analytics...";
+                placeholder = "📊 Ask about usage analytics...";
                 break;
             case 'help':
-                p = "❓ Ask for help or available commands...";
+                placeholder = "❓ Ask for help or available commands...";
                 break;
             default:
-                p = "💬 Ask NOVA anything... (Ctrl+Space for voice)";
+                placeholder = "💬 Ask NOVA anything... (Ctrl+Space for voice)";
         }
-        this.$.messageInput.placeholder = p;
+        this.$.messageInput.placeholder = placeholder;
     }
 
     updateApiStatus(status) { 
-        if (this.$?.apiStatus) this.$.apiStatus.textContent = status; 
+        if (this.$.apiStatus) this.$.apiStatus.textContent = status; 
     }
 
     showStatus(text) { 
-        if (this.$?.statusBar) this.$.statusBar.textContent = text; 
+        if (this.$.statusBar) this.$.statusBar.textContent = text; 
     }
 
     showTypingIndicator() { 
-        if (this.$.typingIndicator) this.$.typingIndicator.style.display = 'flex'; 
-        this.scrollToBottom(); 
+        if (this.$.typingIndicator) {
+            this.$.typingIndicator.style.display = 'flex'; 
+            this.scrollToBottom();
+        }
     }
 
     hideTypingIndicator() { 
         if (this.$.typingIndicator) this.$.typingIndicator.style.display = 'none'; 
     }
 
-    scrollToBottom() { 
-        setTimeout(() => { 
-            if (this.$?.messages) this.$.messages.scrollTop = this.$.messages.scrollHeight; 
-        }, 80); 
+    // Fixed scrolling - only scrolls chat area, not entire panel
+    scrollToBottom() {
+        setTimeout(() => {
+            if (this.$.messages) {
+                this.$.messages.scrollTop = this.$.messages.scrollHeight;
+            }
+        }, 50);
     }
 }
 
 // Initialize NOVA when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.jarvis = new JarvisAIUltimate());
+    document.addEventListener('DOMContentLoaded', () => {
+        window.jarvis = new JarvisAIUltimate();
+        console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded");
+    });
 } else {
     window.jarvis = new JarvisAIUltimate();
+    console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded");
 }
-
-console.log("🤖 NOVA AI v7.2.1 Phase 2 - All Features Working - loaded and ready");
