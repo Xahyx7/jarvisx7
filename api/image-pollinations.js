@@ -12,9 +12,8 @@ module.exports = async (req, res) => {
         
         console.log('🎨 Pollinations request:', message);
         
-        // CORRECT POLLINATIONS API FORMAT (from official docs)
         const cleanPrompt = encodeURIComponent(message.trim());
-        const imageUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=512&height=512&model=flux&nologo=true&enhance=true`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=512&height=512&model=flux-pro&logo=false`;
         
         console.log('✅ Generated URL:', imageUrl);
         
