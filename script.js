@@ -1,12 +1,14 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "NOVA-Ultimate-v7.2.1-Fixed-WebSearch";
+        this.version = "NOVA-Ultimate-v7.2.1-Phase2";
         this.isProcessing = false;
         this.conversationHistory = this.loadConversationHistory();
         this.currentMode = 'chat';
         this.currentImageAPI = 'pollinations';
         this.synthesis = window.speechSynthesis || null;
         this.recognition = null;
+        this.typewriterUsed = { chat: false, search: false, image: false };
+        this.shimmerTimeout = null;
         this.init();
     }
 
@@ -22,6 +24,13 @@ class JarvisAIUltimate {
         this.updateInputPlaceholder();
         this.updateApiStatus("🧠 NOVA ready");
         this.showStatus("Ready");
+
+        // Show hero if no conversation history
+        if (this.conversationHistory.length === 0) {
+            this.showHero();
+        } else {
+            this.collapseHeroThenHide();
+        }
     }
 
     async waitForDOM() {
@@ -41,7 +50,9 @@ class JarvisAIUltimate {
             apiStatus: document.getElementById('apiStatus'),
             sidebar: document.querySelector('.sidebar'),
             statusBar: document.getElementById('statusText'),
-            clearBtn: document.getElementById('clearHistoryBtn')
+            clearBtn: document.getElementById('clearHistoryBtn'),
+            hero: document.getElementById('novaHero'),
+            imageShimmer: document.getElementById('imageShimmer')
         };
     }
 
@@ -86,37 +97,37 @@ class JarvisAIUltimate {
                 this.hideImageApiSelector();
                 this.showStatus("Chat Ready");
                 this.updateApiStatus("🧠 NOVA ready");
-                this.addMessage("💬 Chat mode activated. Ask me anything!", 'jarvis', false, '');
+                this.addModeMessage("💬 Chat mode activated. Ask me anything!", mode);
                 break;
             case 'search':
                 this.hideImageApiSelector();
                 this.showStatus("Web Search Ready");
                 this.updateApiStatus("🔍 Web Search ready");
-                this.addMessage("🔍 Web Search mode activated! I'll search the internet for you.", 'jarvis', false, '');
+                this.addModeMessage("🔍 Web Search mode activated! I'll search the internet for you.", mode);
                 break;
             case 'image':
-                this.showImageApiSelector(); // This shows the 3 API buttons
+                this.showImageApiSelector();
                 this.showStatus("Image Generator Ready");
                 this.updateApiStatus("🎨 " + this.currentImageAPI);
-                this.addMessage("🎨 Image Mode Activated! Pick a style above and type what to generate.", 'jarvis', false, '');
+                this.addModeMessage("🎨 Image Mode Activated! Pick a style above and type what to generate.", mode);
                 break;
             case 'settings':
                 this.hideImageApiSelector();
                 this.showStatus("Settings");
                 this.updateApiStatus("⚙️ Settings");
-                this.addMessage("⚙️ Settings mode - Configure your NOVA experience.", 'jarvis', false, '');
+                this.addModeMessage("⚙️ Settings mode - Configure your NOVA experience.", mode);
                 break;
             case 'analytics':
                 this.hideImageApiSelector();
                 this.showStatus("Analytics");
                 this.updateApiStatus("📊 Analytics");
-                this.addMessage("📊 Analytics mode - View your usage statistics.", 'jarvis', false, '');
+                this.addModeMessage("📊 Analytics mode - View your usage statistics.", mode);
                 break;
             case 'help':
                 this.hideImageApiSelector();
                 this.showStatus("Help");
                 this.updateApiStatus("❓ Help");
-                this.addMessage("❓ Help mode - Available commands:\n• Chat: General conversation\n• Web Search: Real-time web searches\n• Image Gen: Generate images\n• Voice: Ctrl+Space for voice input", 'jarvis', false, '');
+                this.addModeMessage("❓ Help mode - Available commands:\n• Chat: General conversation\n• Web Search: Real-time web searches\n• Image Gen: Generate images\n• Voice: Ctrl+Space for voice input", mode);
                 break;
             default:
                 this.hideImageApiSelector();
@@ -126,7 +137,13 @@ class JarvisAIUltimate {
         this.updateInputPlaceholder();
     }
 
-    // FIXED IMAGE API SELECTOR SETUP
+    addModeMessage(message, mode) {
+        if (!this.typewriterUsed[mode]) {
+            this.addMessage(message, 'jarvis', false, 'NOVA', { typewriter: true });
+            this.typewriterUsed[mode] = true;
+        }
+    }
+
     setupImageApiSelector() {
         const btns = document.querySelectorAll('.image-api-selector .api-btn');
         btns.forEach(btn => {
@@ -144,15 +161,71 @@ class JarvisAIUltimate {
     showImageApiSelector() { 
         const selector = document.querySelector('.image-api-selector');
         if (selector) {
-            selector.style.display = 'flex'; // Shows the 3 buttons
+            selector.style.display = 'flex';
         }
     }
 
     hideImageApiSelector() { 
         const selector = document.querySelector('.image-api-selector');
         if (selector) {
-            selector.style.display = 'none'; // Hides the 3 buttons
+            selector.style.display = 'none';
         }
+    }
+
+    // Hero show/hide methods
+    showHero() {
+        if (!this.$.hero) return;
+        this.$.hero.classList.remove('hidden', 'collapsing');
+        this.$.hero.classList.add('visible');
+    }
+
+    collapseHeroThenHide() {
+        if (!this.$.hero) return;
+        this.$.hero.classList.remove('visible');
+        this.$.hero.classList.add('collapsing');
+        setTimeout(() => {
+            this.$.hero.classList.remove('collapsing');
+            this.$.hero.classList.add('hidden');
+        }, 300);
+    }
+
+    // Image shimmer methods
+    showImageShimmer() {
+        if (!this.$.imageShimmer) return;
+        this.$.imageShimmer.style.display = 'block';
+        this.$.imageShimmer.classList.remove('fade-out');
+        this.$.imageShimmer.classList.add('fade-in');
+        
+        // Auto-hide after 60 seconds
+        clearTimeout(this.shimmerTimeout);
+        this.shimmerTimeout = setTimeout(() => this.hideImageShimmer(), 60000);
+    }
+
+    hideImageShimmer() {
+        if (!this.$.imageShimmer) return;
+        this.$.imageShimmer.classList.remove('fade-in');
+        this.$.imageShimmer.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.$.imageShimmer) this.$.imageShimmer.style.display = 'none';
+        }, 250);
+        clearTimeout(this.shimmerTimeout);
+    }
+
+    // Typewriter animation
+    async typewriterRender(targetElement, text, speed = 20) {
+        return new Promise(resolve => {
+            targetElement.classList.add('typewriter');
+            targetElement.textContent = '';
+            let i = 0;
+            const interval = setInterval(() => {
+                targetElement.textContent += text.charAt(i++);
+                if (i >= text.length) {
+                    clearInterval(interval);
+                    targetElement.classList.remove('typewriter');
+                    resolve();
+                }
+            }, speed);
+        });
     }
 
     loadConversationHistory() {
@@ -170,7 +243,10 @@ class JarvisAIUltimate {
         localStorage.removeItem('jarvis_history');
         this.renderAllMessages();
         this.showStatus("Chat cleared.");
-        this.addMessage("🧹 Conversation history cleared.", 'jarvis', false, '');
+        this.showHero(); // Show hero again when chat is cleared
+        
+        // Reset typewriter flags
+        this.typewriterUsed = { chat: false, search: false, image: false };
     }
 
     renderAllMessages() {
@@ -181,7 +257,7 @@ class JarvisAIUltimate {
         }
     }
 
-    addMessage(content, sender, withSpeaker = false, provider = '') {
+    addMessage(content, sender, withSpeaker = false, provider = '', opts = {}) {
         this.conversationHistory.push({
             role: sender === 'user' ? 'user' : 'assistant',
             content,
@@ -189,10 +265,10 @@ class JarvisAIUltimate {
             timestamp: new Date().toISOString()
         });
         this.saveConversationHistory();
-        this.renderMessage(content, sender, withSpeaker, provider);
+        this.renderMessage(content, sender, withSpeaker, provider, opts);
     }
 
-    renderMessage(content, sender, withSpeaker = false, provider = '') {
+    async renderMessage(content, sender, withSpeaker = false, provider = '', opts = {}) {
         const messagesContainer = this.$.messages;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'jarvis-message'}`;
@@ -202,10 +278,18 @@ class JarvisAIUltimate {
         if (sender === 'user') {
             messageContent.textContent = content;
         } else {
-            if (typeof content === 'string' && content.startsWith('<img')) {
+            if (content.startsWith('<img')) {
                 messageContent.innerHTML = content;
             } else {
-                messageContent.innerHTML = String(content || '').replace(/\n/g, '<br>');
+                if (opts.typewriter) {
+                    messageContent.textContent = '';
+                    messageDiv.appendChild(messageContent);
+                    messagesContainer.appendChild(messageDiv);
+                    this.scrollToBottom();
+                    await this.typewriterRender(messageContent, content, opts.speed || 20);
+                } else {
+                    messageContent.innerHTML = content.replace(/\n/g, '<br>');
+                }
             }
             
             if (provider) {
@@ -228,16 +312,33 @@ class JarvisAIUltimate {
             }
         }
         
-        messageDiv.appendChild(messageContent);
-        messagesContainer.appendChild(messageDiv);
+        if (!opts.typewriter) {
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+        }
+        
         this.scrollToBottom();
     }
 
     async processUserMessage() {
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            console.warn('Already processing a message');
+            return;
+        }
         
         let message = this.$.messageInput.value.trim();
-        if (!message) return;
+        if (!message) {
+            console.warn('Empty message - not sending');
+            return;
+        }
+        
+        // Collapse hero on first message
+        if (this.conversationHistory.length === 0) {
+            this.collapseHeroThenHide();
+        }
+        
+        // Reset typewriter for this mode
+        this.typewriterUsed[this.currentMode] = false;
         
         this.isProcessing = true;
         this.updateSendButton();
@@ -249,20 +350,38 @@ class JarvisAIUltimate {
         this.showTypingIndicator();
         this.showStatus(`Processing in ${this.currentMode} mode...`);
         
+        // Show shimmer for image generation
+        if (this.currentMode === 'image') {
+            this.showImageShimmer();
+        }
+        
         try {
             const response = await this.getResponseBasedOnMode(message);
             this.hideTypingIndicator();
             
             if (response.output_url) {
+                // Image response
+                this.hideImageShimmer();
                 this.addMessage(`<img src="${response.output_url}" style="max-width:100%;border-radius:1rem;"/>`, 'jarvis', false, response.provider);
             } else {
-                this.addMessage(response.response || response.text || "No reply received.", 'jarvis', true, response.provider);
+                // Text response with typewriter for first message in mode
+                const useTypewriter = !this.typewriterUsed[this.currentMode];
+                this.typewriterUsed[this.currentMode] = true;
+                
+                this.addMessage(
+                    response.response || "No reply received.", 
+                    'jarvis', 
+                    true, 
+                    response.provider,
+                    { typewriter: useTypewriter, speed: 20 }
+                );
             }
             
             this.showStatus('Response complete');
         } catch (error) {
             console.error('Error in processUserMessage:', error);
             this.hideTypingIndicator();
+            this.hideImageShimmer();
             this.addMessage(`❌ Error: ${error.message}`, 'jarvis');
             this.showStatus('Error');
         } finally {
@@ -275,20 +394,31 @@ class JarvisAIUltimate {
     async getResponseBasedOnMode(message) {
         let endpoint, task;
         
+        console.log(`🎯 Current mode: ${this.currentMode}`);
+        
         switch (this.currentMode) {
             case 'chat':
                 endpoint = '/api/chat';
                 task = 'chat';
+                console.log('📡 Using chat endpoint');
                 break;
             case 'search':
                 endpoint = '/api/search';
                 task = 'search';
+                console.log('🔍 Using search endpoint');
                 break;
             case 'image':
                 task = 'image';
+                console.log(`🎨 Using image endpoint: ${this.currentImageAPI}`);
                 if (this.currentImageAPI === 'huggingface') endpoint = '/api/image-huggingface';
                 else if (this.currentImageAPI === 'kroki') endpoint = '/api/kroki';
                 else endpoint = '/api/image-pollination';
+                break;
+            case 'settings':
+            case 'analytics':
+            case 'help':
+                endpoint = '/api/chat';
+                task = 'chat';
                 break;
             default:
                 endpoint = '/api/chat';
@@ -301,6 +431,8 @@ class JarvisAIUltimate {
             task: task 
         };
         
+        console.log(`📤 Sending to ${endpoint}:`, { message: message.substring(0, 50), task });
+        
         const response = await fetch(endpoint, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
@@ -309,10 +441,12 @@ class JarvisAIUltimate {
         
         if (!response.ok) {
             const errorText = await response.text();
+            console.error(`API Error ${response.status}:`, errorText);
             throw new Error(`API Error ${response.status}: ${errorText}`);
         }
         
         const result = await response.json();
+        console.log('📥 Response received:', result);
         return result;
     }
 
@@ -353,6 +487,9 @@ class JarvisAIUltimate {
                 console.log(`🎤 Loaded ${voices.length} voices`);
             };
             this.synthesis.getVoices();
+        } else {
+            console.warn('❌ Speech synthesis not supported');
+            this.synthesis = null;
         }
         
         if (window.SpeechRecognition || window.webkitSpeechRecognition) {
@@ -383,16 +520,25 @@ class JarvisAIUltimate {
     }
 
     speakText(text) {
-        if (!this.synthesis) return;
+        console.log('🔊 Attempting to speak:', text.substring(0, 50));
         
-        const cleanText = String(text || '')
+        if (!this.synthesis) {
+            console.warn('Speech synthesis not supported');
+            this.showStatus('🚫 Text-to-speech not supported');
+            return;
+        }
+        
+        const cleanText = text
             .replace(/<[^>]*>/g, '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim()
             .substring(0, 300);
         
-        if (cleanText.length < 2) return;
+        if (cleanText.length < 2) {
+            console.warn('Text too short to speak');
+            return;
+        }
         
         this.synthesis.cancel();
         
@@ -403,15 +549,26 @@ class JarvisAIUltimate {
                 utterance.pitch = 1.0;
                 utterance.volume = 0.8;
                 
-                utterance.onstart = () => this.showStatus('🔊 Speaking...');
-                utterance.onend = () => this.showStatus('Ready');
-                utterance.onerror = (e) => this.showStatus(`❌ Speech error: ${e.error}`);
+                utterance.onerror = (event) => {
+                    console.error('Speech error:', event.error, event.type);
+                    this.showStatus(`❌ Speech error: ${event.error}`);
+                };
+                
+                utterance.onstart = () => {
+                    console.log('✅ Speech started');
+                    this.showStatus('🔊 Speaking...');
+                };
+                
+                utterance.onend = () => {
+                    console.log('✅ Speech ended');
+                    this.showStatus('Ready');
+                };
                 
                 this.synthesis.speak(utterance);
                 
             } catch (error) {
                 console.error('Speech synthesis failed:', error);
-                this.showStatus('❌ Speech failed');
+                this.showStatus('❌ Speech failed: ' + error.message);
             }
         }, 250);
     }
@@ -485,4 +642,4 @@ if (document.readyState === 'loading') {
     window.jarvis = new JarvisAIUltimate();
 }
 
-console.log("🤖 NOVA AI v7.2.1 - All Features Fixed & Working");
+console.log("🤖 NOVA AI v7.2.1 Phase 2 - All Features Working - loaded and ready");
