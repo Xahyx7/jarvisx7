@@ -999,6 +999,221 @@ body {
     from { opacity: 1; }
     to { opacity: 0; }
 }
+/* === LAYOUT FIXES FOR HERO ANIMATION & SCROLLING === */
+
+.main-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden; /* Prevent main panel from scrolling */
+    position: relative;
+}
+
+/* Hero Logo Animation (Fixed Position, Non-Scrollable) */
+.nova-hero {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 200px;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+}
+
+.nova-hero.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.nova-hero.collapsing {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-30px) scale(0.95);
+    pointer-events: none;
+}
+
+.nova-hero.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-40px) scale(0.9);
+    pointer-events: none;
+}
+
+/* Chat Container (Flexible, Scrollable) */
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: 0px; /* Space for hero when visible */
+    transition: padding-top 0.4s ease;
+}
+
+.chat-container.hero-visible {
+    padding-top: 220px; /* Space for hero */
+}
+
+.chat-container.hero-hidden {
+    padding-top: 20px; /* Minimal space when hero is hidden */
+}
+
+/* Chat Area (This is what actually scrolls) */
+.chat-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    scroll-behavior: smooth;
+    
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(126, 83, 255, 0.6) rgba(255, 255, 255, 0.1);
+}
+
+.chat-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-area::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.chat-area::-webkit-scrollbar-thumb {
+    background: rgba(126, 83, 255, 0.6);
+    border-radius: 3px;
+}
+
+.chat-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(126, 83, 255, 0.8);
+}
+
+/* Hero Logo Styling */
+.nova-logo-orb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 60% 40%, #272c34 60%, #131519 100%);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    box-shadow: 0 0 30px #4c84f9, 0 0 6px #fff;
+}
+
+.nova-logo-img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+/* Image Loading Shimmer */
+.image-shimmer {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    height: 400px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1321 100%);
+    box-shadow: 0 0 20px rgba(126, 83, 255, 0.3);
+    margin: 16px auto;
+}
+
+.image-shimmer .shimmer-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        110deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.15) 30%,
+        rgba(255, 255, 255, 0.25) 50%,
+        rgba(255, 255, 255, 0.15) 70%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmerMove 2.2s ease-in-out infinite;
+}
+
+@keyframes shimmerMove {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Typewriter Animation */
+.typewriter {
+    display: inline-block;
+    border-right: 2px solid rgba(255, 255, 255, 0.8);
+    white-space: pre-wrap;
+    overflow: hidden;
+    animation: caretBlink 700ms steps(1) infinite;
+}
+
+@keyframes caretBlink {
+    50% { border-color: transparent; }
+}
+
+/* Fade Animations */
+.fade-in {
+    animation: fadeIn 300ms ease forwards;
+}
+
+.fade-out {
+    animation: fadeOut 250ms ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Input Section (Fixed at Bottom) */
+.input-section {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+/* Responsive adjustments */
+@media (max-height: 600px) {
+    .nova-hero {
+        height: 150px;
+        gap: 8px;
+    }
+    
+    .chat-container.hero-visible {
+        padding-top: 170px;
+    }
+    
+    .nova-logo-orb {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .nova-logo-img {
+        width: 50px;
+        height: 50px;
+    }
+}
 
 /* Improved Chat Area Expansion */
 .chat-area {
