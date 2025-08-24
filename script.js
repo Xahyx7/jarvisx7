@@ -1,32 +1,41 @@
 class JarvisAIUltimate {
     constructor() {
-        this.version = "NOVA-Ultimate-v7.2.1-Phase2";
+        this.version = "NOVA-Ultimate-v7.2.1-Phase2-Complete";
         this.isProcessing = false;
-        this.conversationHistory = this.loadConversationHistory();
         this.currentMode = 'chat';
         this.currentImageAPI = 'pollinations';
         this.synthesis = window.speechSynthesis || null;
         this.recognition = null;
         this.typewriterUsed = { chat: false, search: false, image: false };
         this.shimmerTimeout = null;
+        this.isLibraryOpen = false;
         this.$ = {};
+        
+        // Session management
+        this.sessions = this.loadSessions();
+        this.currentSessionId = this.getCurrentSessionId();
+        this.conversationHistory = this.getCurrentSessionMessages();
+        
         this.init();
     }
 
     async init() {
         await this.waitForDOM();
         this.cacheUI();
-        this.renderAllMessages();
+        this.setupLibrarySidebar();
         this.setupSidebarNavigation();
         this.setupImageApiSelector();
         this.setupFormEvents();
         this.setupVoice();
         this.setupNeonEffects();
+        
+        this.renderAllMessages();
+        this.renderSessionsList();
         this.updateInputPlaceholder();
         this.updateApiStatus("🧠 NOVA ready");
+        this.updateSessionInfo();
         this.showStatus("Ready");
 
-        // Show hero if no conversation history
         if (this.conversationHistory.length === 0) {
             this.showHero();
         } else {
@@ -56,16 +65,282 @@ class JarvisAIUltimate {
             clearBtn: document.getElementById('clearHistoryBtn'),
             hero: document.getElementById('novaHero'),
             imageShimmer: document.getElementById('imageShimmer'),
-            chatContainer: document.querySelector('.chat-container')
+            chatContainer: document.querySelector('.chat-container'),
+            searchResults: document.getElementById('searchResults'),
+            sessionInfo: document.getElementById('sessionInfo')
         };
     }
 
+    // === SESSION MANAGEMENT ===
+
+    loadSessions() {
+        try {
+            const saved = localStorage.getItem('nova_sessions');
+            const sessions = saved ? JSON.parse(saved) : {};
+            
+            if (!sessions['default']) {
+                sessions['default'] = {
+                    id: 'default',
+                    name: 'Default Chat',
+                    messages: [],
+                    created: new Date().toISOString(),
+                    lastModified: new Date().toISOString(),
+                    mode: 'chat'
+                };
+            }
+            
+            return sessions;
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+            return { 
+                'default': { 
+                    id: 'default', 
+                    name: 'Default Chat', 
+                    messages: [], 
+                    created: new Date().toISOString(), 
+                    lastModified: new Date().toISOString(), 
+                    mode: 'chat' 
+                } 
+            };
+        }
+    }
+
+    saveSessions() {
+        try {
+            localStorage.setItem('nova_sessions', JSON.stringify(this.sessions));
+        } catch (error) {
+            console.error('Error saving sessions:', error);
+        }
+    }
+
+    getCurrentSessionId() {
+        return localStorage.getItem('nova_current_session') || 'default';
+    }
+
+    getCurrentSessionMessages() {
+        const sessionId = this.getCurrentSessionId();
+        return this.sessions[sessionId]?.messages || [];
+    }
+
+    setCurrentSession(sessionId) {
+        this.currentSessionId = sessionId;
+        localStorage.setItem('nova_current_session', sessionId);
+        
+        if (this.sessions[sessionId]) {
+            this.conversationHistory = this.sessions[sessionId].messages;
+            this.renderAllMessages();
+            this.updateSessionInfo();
+            this.renderSessionsList();
+            
+            if (this.conversationHistory.length === 0) {
+                this.showHero();
+            } else {
+                this.collapseHeroThenHide();
+            }
+        }
+    }
+
+    createNewSession() {
+        const sessionId = 'session_' + Date.now();
+        const sessionName = `Chat ${Object.keys(this.sessions).length}`;
+        
+        this.sessions[sessionId] = {
+            id: sessionId,
+            name: sessionName,
+            messages: [],
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            mode: this.currentMode
+        };
+        
+        this.saveSessions();
+        this.setCurrentSession(sessionId);
+        this.showHero();
+        this.toggleLibrary(); // Close library after creating new session
+    }
+
+    deleteSession(sessionId) {
+        if (sessionId === 'default') return;
+        
+        if (confirm('Delete this chat session?')) {
+            delete this.sessions[sessionId];
+            this.saveSessions();
+            
+            if (this.currentSessionId === sessionId) {
+                this.setCurrentSession('default');
+            }
+            
+            this.renderSessionsList();
+        }
+    }
+
+    renameSession(sessionId, newName) {
+        if (this.sessions[sessionId]) {
+            this.sessions[sessionId].name = newName;
+            this.sessions[sessionId].lastModified = new Date().toISOString();
+            this.saveSessions();
+            this.renderSessionsList();
+            this.updateSessionInfo();
+        }
+    }
+
+    updateSessionInfo() {
+        if (this.$.sessionInfo && this.sessions[this.currentSessionId]) {
+            this.$.sessionInfo.textContent = `Session: ${this.sessions[this.currentSessionId].name}`;
+        }
+    }
+
+    // === LIBRARY SIDEBAR MANAGEMENT ===
+
+    setupLibrarySidebar() {
+        const libraryToggle = document.getElementById('libraryToggle');
+        const closeLibrary = document.getElementById('closeLibrary');
+        const libraryOverlay = document.getElementById('libraryOverlay');
+        const newChatBtn = document.getElementById('newChatBtn');
+        
+        if (libraryToggle) {
+            libraryToggle.addEventListener('click', () => this.toggleLibrary());
+        }
+        
+        if (closeLibrary) {
+            closeLibrary.addEventListener('click', () => this.toggleLibrary());
+        }
+        
+        if (libraryOverlay) {
+            libraryOverlay.addEventListener('click', () => this.toggleLibrary());
+        }
+        
+        if (newChatBtn) {
+            newChatBtn.addEventListener('click', () => this.createNewSession());
+        }
+    }
+
+    toggleLibrary() {
+        const librarySidebar = document.getElementById('librarySidebar');
+        const libraryOverlay = document.getElementById('libraryOverlay');
+        const mainPanel = document.querySelector('.main-panel');
+        
+        if (!librarySidebar || !libraryOverlay || !mainPanel) return;
+        
+        this.isLibraryOpen = !this.isLibraryOpen;
+        
+        if (this.isLibraryOpen) {
+            librarySidebar.classList.add('open');
+            libraryOverlay.classList.add('active');
+            mainPanel.classList.add('library-open');
+        } else {
+            librarySidebar.classList.remove('open');
+            libraryOverlay.classList.remove('active');
+            mainPanel.classList.remove('library-open');
+        }
+    }
+
+    renderSessionsList() {
+        const sessionsList = document.getElementById('sessionsList');
+        if (!sessionsList) return;
+        
+        const sessionsArray = Object.values(this.sessions).sort((a, b) => 
+            new Date(b.lastModified) - new Date(a.lastModified)
+        );
+        
+        sessionsList.innerHTML = sessionsArray.map(session => `
+            <div class="session-item ${session.id === this.currentSessionId ? 'active' : ''}" 
+                 data-session-id="${session.id}">
+                <span class="session-icon">${this.getSessionIcon(session.mode)}</span>
+                <div class="session-info">
+                    <div class="session-name" ondblclick="window.jarvis.editSessionName('${session.id}')">${session.name}</div>
+                    <div class="session-meta">${this.formatDate(session.lastModified)} • ${session.messages.length} messages</div>
+                </div>
+                <div class="session-actions">
+                    <button class="session-action-btn" onclick="window.jarvis.editSessionName('${session.id}')" title="Rename">✏️</button>
+                    ${session.id !== 'default' ? `<button class="session-action-btn" onclick="window.jarvis.deleteSession('${session.id}')" title="Delete">🗑️</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        // Add click listeners
+        sessionsList.querySelectorAll('.session-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('session-action-btn')) {
+                    const sessionId = item.getAttribute('data-session-id');
+                    this.setCurrentSession(sessionId);
+                }
+            });
+        });
+    }
+
+    getSessionIcon(mode) {
+        const icons = { 
+            chat: '💬', 
+            search: '🔍', 
+            image: '🎨', 
+            analytics: '📊', 
+            settings: '⚙️', 
+            help: '❓' 
+        };
+        return icons[mode] || '💬';
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 30) return `${days}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    editSessionName(sessionId) {
+        const sessionItem = document.querySelector(`[data-session-id="${sessionId}"] .session-name`);
+        if (!sessionItem) return;
+        
+        const currentName = sessionItem.textContent;
+        const input = document.createElement('input');
+        input.value = currentName;
+        input.className = 'session-name editing';
+        input.style.width = '100%';
+        
+        sessionItem.replaceWith(input);
+        input.focus();
+        input.select();
+        
+        const saveEdit = () => {
+            const newName = input.value.trim() || currentName;
+            this.renameSession(sessionId, newName);
+        };
+        
+        input.addEventListener('blur', saveEdit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEdit();
+            }
+            if (e.key === 'Escape') {
+                this.renderSessionsList();
+            }
+        });
+    }
+
+    // === SIDEBAR NAVIGATION ===
+
     setupSidebarNavigation() {
         this.$.sidebarItems.forEach(item => {
+            if (item.id === 'libraryToggle') return; // Skip library toggle
+            
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                this.$.sidebarItems.forEach(i => i.classList.remove('active'));
+                this.$.sidebarItems.forEach(i => {
+                    if (i.id !== 'libraryToggle') {
+                        i.classList.remove('active');
+                    }
+                });
                 item.classList.add('active');
                 
                 const mode = item.getAttribute('data-mode');
@@ -79,6 +354,12 @@ class JarvisAIUltimate {
     switchMode(mode) {
         this.currentMode = mode;
         console.log(`🔄 Switching to mode: ${mode}`);
+        
+        // Update current session mode
+        if (this.sessions[this.currentSessionId]) {
+            this.sessions[this.currentSessionId].mode = mode;
+            this.saveSessions();
+        }
         
         switch (mode) {
             case 'chat':
@@ -132,6 +413,8 @@ class JarvisAIUltimate {
         }
     }
 
+    // === IMAGE API SELECTOR ===
+
     setupImageApiSelector() {
         const btns = document.querySelectorAll('.image-api-selector .api-btn');
         btns.forEach(btn => {
@@ -157,6 +440,81 @@ class JarvisAIUltimate {
             this.$.apiSelector.style.display = 'none';
         }
     }
+
+    // === HERO MANAGEMENT ===
+
+    showHero() {
+        if (!this.$.hero) return;
+        
+        this.$.hero.classList.remove('hidden', 'collapsing');
+        this.$.hero.classList.add('visible');
+        
+        if (this.$.chatContainer) {
+            this.$.chatContainer.classList.add('hero-visible');
+            this.$.chatContainer.classList.remove('hero-hidden');
+        }
+    }
+
+    collapseHeroThenHide() {
+        if (!this.$.hero) return;
+        
+        this.$.hero.classList.remove('visible');
+        this.$.hero.classList.add('collapsing');
+        
+        if (this.$.chatContainer) {
+            this.$.chatContainer.classList.remove('hero-visible');
+            this.$.chatContainer.classList.add('hero-hidden');
+        }
+        
+        setTimeout(() => {
+            if (this.$.hero) {
+                this.$.hero.classList.remove('collapsing');
+                this.$.hero.classList.add('hidden');
+            }
+        }, 400);
+    }
+
+    // === IMAGE SHIMMER ===
+
+    showImageShimmer() {
+        if (!this.$.imageShimmer) return;
+        this.$.imageShimmer.style.display = 'block';
+        this.$.imageShimmer.classList.remove('fade-out');
+        this.$.imageShimmer.classList.add('fade-in');
+        
+        clearTimeout(this.shimmerTimeout);
+        this.shimmerTimeout = setTimeout(() => this.hideImageShimmer(), 60000);
+    }
+
+    hideImageShimmer() {
+        if (!this.$.imageShimmer) return;
+        this.$.imageShimmer.classList.remove('fade-in');
+        this.$.imageShimmer.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.$.imageShimmer) this.$.imageShimmer.style.display = 'none';
+        }, 250);
+        clearTimeout(this.shimmerTimeout);
+    }
+
+    // === TYPEWRITER ANIMATION ===
+
+    async typewriterRender(targetElement, text, speed = 20) {
+        return new Promise(resolve => {
+            targetElement.classList.add('typewriter');
+            targetElement.textContent = '';
+            let i = 0;
+            const interval = setInterval(() => {
+                targetElement.textContent += text.charAt(i++);
+                if (i >= text.length) {
+                    clearInterval(interval);
+                    targetElement.classList.remove('typewriter');
+                    resolve();
+                }
+            }, speed);
+        });
+    }
+
+    // === FORM EVENTS ===
 
     setupFormEvents() {
         this.$.messageForm.addEventListener('submit', e => {
@@ -185,8 +543,12 @@ class JarvisAIUltimate {
             }
         });
         
-        this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
+        if (this.$.clearBtn) {
+            this.$.clearBtn.addEventListener('click', () => this.clearConversationHistory());
+        }
     }
+
+    // === VOICE SETUP ===
 
     setupVoice() {
         if (this.synthesis) {
@@ -233,78 +595,6 @@ class JarvisAIUltimate {
                 }, 1000);
             });
         }
-    }
-
-    // Hero show/hide with chat container animation
-    showHero() {
-        if (!this.$.hero) return;
-        
-        this.$.hero.classList.remove('hidden', 'collapsing');
-        this.$.hero.classList.add('visible');
-        
-        // Adjust chat container padding for hero space
-        if (this.$.chatContainer) {
-            this.$.chatContainer.classList.add('hero-visible');
-            this.$.chatContainer.classList.remove('hero-hidden');
-        }
-    }
-
-    collapseHeroThenHide() {
-        if (!this.$.hero) return;
-        
-        this.$.hero.classList.remove('visible');
-        this.$.hero.classList.add('collapsing');
-        
-        // Expand chat container immediately
-        if (this.$.chatContainer) {
-            this.$.chatContainer.classList.remove('hero-visible');
-            this.$.chatContainer.classList.add('hero-hidden');
-        }
-        
-        setTimeout(() => {
-            if (this.$.hero) {
-                this.$.hero.classList.remove('collapsing');
-                this.$.hero.classList.add('hidden');
-            }
-        }, 400);
-    }
-
-    // Image shimmer methods
-    showImageShimmer() {
-        if (!this.$.imageShimmer) return;
-        this.$.imageShimmer.style.display = 'block';
-        this.$.imageShimmer.classList.remove('fade-out');
-        this.$.imageShimmer.classList.add('fade-in');
-        
-        clearTimeout(this.shimmerTimeout);
-        this.shimmerTimeout = setTimeout(() => this.hideImageShimmer(), 60000);
-    }
-
-    hideImageShimmer() {
-        if (!this.$.imageShimmer) return;
-        this.$.imageShimmer.classList.remove('fade-in');
-        this.$.imageShimmer.classList.add('fade-out');
-        setTimeout(() => {
-            if (this.$.imageShimmer) this.$.imageShimmer.style.display = 'none';
-        }, 250);
-        clearTimeout(this.shimmerTimeout);
-    }
-
-    // Typewriter animation
-    async typewriterRender(targetElement, text, speed = 20) {
-        return new Promise(resolve => {
-            targetElement.classList.add('typewriter');
-            targetElement.textContent = '';
-            let i = 0;
-            const interval = setInterval(() => {
-                targetElement.textContent += text.charAt(i++);
-                if (i >= text.length) {
-                    clearInterval(interval);
-                    targetElement.classList.remove('typewriter');
-                    resolve();
-                }
-            }, speed);
-        });
     }
 
     startVoiceRecognition() { 
@@ -369,35 +659,7 @@ class JarvisAIUltimate {
         }, 250);
     }
 
-    loadConversationHistory() {
-        try {
-            const saved = localStorage.getItem('jarvis_history');
-            return saved ? JSON.parse(saved) : [];
-        } catch (error) {
-            console.error('Error loading conversation history:', error);
-            return [];
-        }
-    }
-
-    saveConversationHistory() {
-        try {
-            localStorage.setItem('jarvis_history', JSON.stringify(this.conversationHistory));
-        } catch (error) {
-            console.error('Error saving conversation history:', error);
-        }
-    }
-
-    clearConversationHistory() {
-        if (!confirm("Clear your entire conversation history?")) return;
-        this.conversationHistory = [];
-        localStorage.removeItem('jarvis_history');
-        this.renderAllMessages();
-        this.showStatus("Chat cleared.");
-        this.showHero(); // Show hero again when chat is cleared
-        
-        // Reset typewriter flags
-        this.typewriterUsed = { chat: false, search: false, image: false };
-    }
+    // === MESSAGE HANDLING ===
 
     renderAllMessages() {
         if (!this.$.messages) return;
@@ -442,7 +704,6 @@ class JarvisAIUltimate {
             return;
         }
         
-        // Assistant text message
         if (opts.typewriter) {
             messageContent.textContent = '';
             messageDiv.appendChild(messageContent);
@@ -507,6 +768,8 @@ class JarvisAIUltimate {
         });
     }
 
+    // === MESSAGE PROCESSING ===
+
     async processUserMessage() {
         if (this.isProcessing) {
             console.warn('Already processing a message');
@@ -519,12 +782,10 @@ class JarvisAIUltimate {
             return;
         }
         
-        // Collapse hero on first message
         if (this.conversationHistory.length === 0) {
             this.collapseHeroThenHide();
         }
         
-        // Reset typewriter for this mode
         this.typewriterUsed[this.currentMode] = false;
         
         this.isProcessing = true;
@@ -537,7 +798,6 @@ class JarvisAIUltimate {
         this.showTypingIndicator();
         this.showStatus(`Processing in ${this.currentMode} mode...`);
         
-        // Show shimmer for image generation
         if (this.currentMode === 'image') {
             this.showImageShimmer();
         }
@@ -547,11 +807,9 @@ class JarvisAIUltimate {
             this.hideTypingIndicator();
             
             if (response.output_url) {
-                // Image response
                 this.hideImageShimmer();
                 this.addMessage(`<img src="${response.output_url}" style="max-width:100%;border-radius:1rem;"/>`, 'jarvis', false, response.provider);
             } else {
-                // Text response with typewriter for first message in mode
                 const useTypewriter = !this.typewriterUsed[this.currentMode];
                 this.typewriterUsed[this.currentMode] = true;
                 
@@ -587,25 +845,16 @@ class JarvisAIUltimate {
             case 'chat':
                 endpoint = '/api/chat';
                 task = 'chat';
-                console.log('📡 Using chat endpoint');
                 break;
             case 'search':
                 endpoint = '/api/search';
                 task = 'search';
-                console.log('🔍 Using search endpoint');
                 break;
             case 'image':
                 task = 'image';
-                console.log(`🎨 Using image endpoint: ${this.currentImageAPI}`);
                 if (this.currentImageAPI === 'huggingface') endpoint = '/api/image-huggingface';
                 else if (this.currentImageAPI === 'kroki') endpoint = '/api/kroki';
                 else endpoint = '/api/image-pollination';
-                break;
-            case 'settings':
-            case 'analytics':
-            case 'help':
-                endpoint = '/api/chat';
-                task = 'chat';
                 break;
             default:
                 endpoint = '/api/chat';
@@ -614,7 +863,7 @@ class JarvisAIUltimate {
         
         const payload = { 
             message: message, 
-            history: this.conversationHistory.slice(-6), // Keep last 6 messages for context
+            history: this.conversationHistory.slice(-6), 
             task: task 
         };
         
@@ -636,6 +885,35 @@ class JarvisAIUltimate {
         console.log('📥 Response received:', result);
         return result;
     }
+
+    // === CONVERSATION HISTORY ===
+
+    saveConversationHistory() {
+        if (this.sessions[this.currentSessionId]) {
+            this.sessions[this.currentSessionId].messages = this.conversationHistory;
+            this.sessions[this.currentSessionId].lastModified = new Date().toISOString();
+            this.saveSessions();
+            this.renderSessionsList();
+        }
+    }
+
+    clearConversationHistory() {
+        if (!confirm("Clear current session chat history?")) return;
+        
+        this.conversationHistory = [];
+        if (this.sessions[this.currentSessionId]) {
+            this.sessions[this.currentSessionId].messages = [];
+            this.sessions[this.currentSessionId].lastModified = new Date().toISOString();
+        }
+        this.saveSessions();
+        this.renderAllMessages();
+        this.renderSessionsList();
+        this.showStatus("Session cleared.");
+        this.showHero();
+        this.typewriterUsed = { chat: false, search: false, image: false };
+    }
+
+    // === UTILITY METHODS ===
 
     autoResizeTextarea() {
         const area = this.$.messageInput;
@@ -694,7 +972,6 @@ class JarvisAIUltimate {
         if (this.$.typingIndicator) this.$.typingIndicator.style.display = 'none'; 
     }
 
-    // Fixed scrolling - only scrolls chat area, not entire panel
     scrollToBottom() {
         setTimeout(() => {
             if (this.$.messages) {
@@ -708,9 +985,9 @@ class JarvisAIUltimate {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         window.jarvis = new JarvisAIUltimate();
-        console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded");
+        console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded & Ready");
     });
 } else {
     window.jarvis = new JarvisAIUltimate();
-    console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded");
+    console.log("🤖 NOVA AI v7.2.1 Phase 2 - Complete System Loaded & Ready");
 }
