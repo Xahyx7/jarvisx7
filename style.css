@@ -1222,66 +1222,23 @@ body {
     padding: 0 20px;
     transition: all 0.3s ease;
 }
-/* === LIBRARY SIDEBAR STYLES === */
+/* === ADD THESE LIBRARY SIDEBAR STYLES TO YOUR EXISTING CSS === */
 
-/* Main Sidebar Updates */
-.sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 280px;
-    height: 100vh;
-    background: linear-gradient(145deg, #1a1f2e 0%, #0f1321 100%);
-    border-right: 1px solid rgba(126, 83, 255, 0.2);
-    z-index: 100;
-    transition: transform 0.3s ease;
-}
-
-.sidebar-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nova-logo-sidebar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.nova-logo-sidebar-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: contain;
-}
-
-.nova-logo-text {
-    font-size: 18px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #4c84f9, #7e53ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-/* Library Toggle Item */
-.sidebar-item {
+/* Add to sidebar items - make library expandable */
+.sidebar-item #libraryToggle {
     position: relative;
 }
 
 .expand-icon {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px;
+    margin-left: auto;
+    font-size: 16px;
     color: rgba(255, 255, 255, 0.6);
+    opacity: 0;
     transition: all 0.3s ease;
 }
 
-.sidebar-item:hover .expand-icon {
-    color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-50%) translateX(2px);
+.sidebar:hover .expand-icon {
+    opacity: 1;
 }
 
 /* Library Sidebar */
@@ -1291,25 +1248,26 @@ body {
     top: 0;
     width: 320px;
     height: 100vh;
-    background: linear-gradient(145deg, #1e2330 0%, #12171f 100%);
-    border-right: 1px solid rgba(126, 83, 255, 0.3);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
     z-index: 200;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
 }
 
 .library-sidebar.open {
-    left: 280px;
-    box-shadow: 0 0 50px rgba(126, 83, 255, 0.2);
+    left: 80px;
 }
 
-/* Library Header */
 .library-header {
     padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .nova-logo-library {
@@ -1323,38 +1281,35 @@ body {
     height: 40px;
     border-radius: 50%;
     object-fit: contain;
-    box-shadow: 0 0 15px rgba(126, 83, 255, 0.5);
+    box-shadow: var(--glow-primary);
 }
 
 .nova-logo-library-text {
-    font-size: 18px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #7e53ff, #4c84f9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .close-library {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     font-size: 24px;
     cursor: pointer;
     padding: 8px;
-    border-radius: 8px;
+    border-radius: 50%;
     transition: all 0.3s ease;
 }
 
 .close-library:hover {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Library Actions */
 .library-actions {
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .new-chat-btn {
@@ -1363,33 +1318,32 @@ body {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #7e53ff, #4c84f9);
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-glow) 100%);
     border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
+    border-radius: 8px;
+    color: #000000;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(126, 83, 255, 0.3);
+    box-shadow: var(--glow-primary);
 }
 
 .new-chat-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(126, 83, 255, 0.4);
+    transform: translateY(-1px);
+    box-shadow: var(--glow-strong);
 }
 
 .new-chat-icon {
-    font-size: 20px;
-    font-weight: 300;
+    font-size: 16px;
 }
 
-/* Library Content (Scrollable) */
+/* === SCROLLABLE LIBRARY CONTENT === */
 .library-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 16px 0;
-    max-height: calc(100vh - 200px);
 }
 
 .library-content::-webkit-scrollbar {
@@ -1397,20 +1351,19 @@ body {
 }
 
 .library-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: transparent;
 }
 
 .library-content::-webkit-scrollbar-thumb {
-    background: rgba(126, 83, 255, 0.5);
+    background: var(--accent-color);
     border-radius: 3px;
+    opacity: 0.5;
 }
 
 .library-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(126, 83, 255, 0.7);
+    opacity: 1;
 }
 
-/* Sessions List */
 .sessions-list {
     padding: 0 20px;
 }
@@ -1421,7 +1374,7 @@ body {
     gap: 12px;
     padding: 12px 16px;
     margin-bottom: 8px;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     border: 1px solid transparent;
@@ -1430,17 +1383,20 @@ body {
 
 .session-item:hover {
     background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(126, 83, 255, 0.3);
+    border-color: var(--accent-color);
 }
 
 .session-item.active {
-    background: rgba(126, 83, 255, 0.2);
-    border-color: rgba(126, 83, 255, 0.5);
+    background: rgba(192, 192, 192, 0.15);
+    border-color: var(--accent-color);
+    box-shadow: var(--glow-primary);
 }
 
 .session-icon {
-    font-size: 16px;
+    font-size: 14px;
     opacity: 0.8;
+    flex-shrink: 0;
+    color: var(--text-secondary);
 }
 
 .session-info {
@@ -1450,8 +1406,8 @@ body {
 
 .session-name {
     font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    color: var(--text-primary);
     margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1463,12 +1419,12 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
     outline: none;
-    border: 1px solid rgba(126, 83, 255, 0.5);
+    border: 1px solid var(--accent-color);
 }
 
 .session-meta {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+    color: var(--text-muted);
 }
 
 .session-actions {
@@ -1476,6 +1432,7 @@ body {
     gap: 4px;
     opacity: 0;
     transition: opacity 0.3s ease;
+    flex-shrink: 0;
 }
 
 .session-item:hover .session-actions {
@@ -1485,8 +1442,8 @@ body {
 .session-action-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
+    color: var(--text-secondary);
+    font-size: 12px;
     cursor: pointer;
     padding: 4px 6px;
     border-radius: 4px;
@@ -1494,11 +1451,11 @@ body {
 }
 
 .session-action-btn:hover {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Library Overlay */
+/* Library overlay */
 .library-overlay {
     position: fixed;
     top: 0;
@@ -1519,65 +1476,51 @@ body {
 }
 
 /* Main panel adjustment when library is open */
-.main-panel {
-    margin-left: 280px;
-    transition: margin-left 0.3s ease;
-}
-
 .main-panel.library-open {
-    margin-left: 600px;
+    margin-left: 400px;
 }
 
 /* Session Info in Status Bar */
 .session-info {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(126, 83, 255, 0.2);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(192, 192, 192, 0.2);
     padding: 4px 8px;
-    border-radius: 12px;
+    border-radius: 10px;
+    margin: 0 8px;
 }
 
-/* Search Results Styling */
-.search-results {
-    padding: 20px;
-    max-height: 400px;
-    overflow-y: auto;
+/* === ADD SIDEBAR LOGO UPDATES === */
+.sidebar-header {
+    padding: 20px 10px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.search-result-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(126, 83, 255, 0.2);
-    transition: all 0.3s ease;
+.nova-logo-sidebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.search-result-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(126, 83, 255, 0.4);
+.nova-logo-sidebar-img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: contain;
+    box-shadow: var(--glow-primary);
 }
 
-.search-result-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #4c84f9;
-    margin-bottom: 8px;
-    text-decoration: none;
-}
-
-.search-result-title:hover {
-    text-decoration: underline;
-}
-
-.search-result-snippet {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.5;
-    margin-bottom: 8px;
-}
-
-.search-result-url {
+.nova-logo-sidebar-text {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    color: var(--text-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .nova-logo-sidebar-text {
+    opacity: 1;
 }
