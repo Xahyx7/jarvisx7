@@ -1524,3 +1524,184 @@ body {
 .sidebar:hover .nova-logo-sidebar-text {
     opacity: 1;
 }
+/* === UPDATE MAIN SIDEBAR FOR SCROLLING === */
+.sidebar {
+    width: 80px;
+    background: var(--sidebar-bg);
+    padding: 0; /* Remove padding to allow proper scrolling */
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full height */
+    overflow: hidden; /* Prevent outer scrolling */
+}
+
+/* Make sidebar header fixed at top */
+.sidebar-header {
+    padding: 20px 10px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Don't shrink */
+    background: var(--sidebar-bg); /* Ensure background */
+}
+
+/* Make sidebar items scrollable */
+.sidebar-items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1; /* Take remaining space */
+    padding: 20px 10px; /* Move padding here */
+    overflow-y: auto; /* Enable scrolling */
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for main sidebar */
+.sidebar-items::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-items::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-items::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 2px;
+    opacity: 0.3;
+}
+
+.sidebar-items::-webkit-scrollbar-thumb:hover {
+    opacity: 0.6;
+}
+
+/* Hide scrollbar until hover */
+.sidebar-items::-webkit-scrollbar {
+    width: 0px;
+}
+
+.sidebar:hover .sidebar-items::-webkit-scrollbar {
+    width: 4px;
+}
+
+/* === IMPROVE LIBRARY SIDEBAR SCROLLING === */
+.library-sidebar {
+    position: fixed;
+    left: -320px;
+    top: 0;
+    width: 320px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    z-index: 200;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent outer scrolling */
+}
+
+.library-sidebar.open {
+    left: 80px;
+}
+
+/* Fixed library header */
+.library-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Don't shrink */
+    background: var(--sidebar-bg); /* Ensure background */
+}
+
+/* Fixed library actions */
+.library-actions {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Don't shrink */
+    background: var(--sidebar-bg); /* Ensure background */
+}
+
+/* === IMPROVED SCROLLABLE LIBRARY CONTENT === */
+.library-content {
+    flex: 1; /* Take remaining space */
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal scrolling */
+    padding: 0; /* Remove padding to avoid scroll issues */
+}
+
+/* Better scrollbar for library */
+.library-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.library-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    margin: 4px 0; /* Add margin to track */
+}
+
+.library-content::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 3px;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+}
+
+.library-content::-webkit-scrollbar-thumb:hover {
+    opacity: 0.7;
+}
+
+/* Sessions list with proper padding */
+.sessions-list {
+    padding: 16px 20px 20px 20px; /* Move padding here */
+}
+
+/* === RESPONSIVE SCROLLING === */
+@media (max-height: 600px) {
+    /* Ensure scrolling works on smaller screens */
+    .sidebar-items {
+        gap: 10px; /* Reduce gap on small screens */
+    }
+    
+    .sessions-list {
+        padding: 12px 20px 16px 20px; /* Reduce padding on small screens */
+    }
+}
+
+/* === SMOOTH SCROLLING BEHAVIOR === */
+.sidebar-items,
+.library-content {
+    scroll-behavior: smooth;
+}
+
+/* Show scroll indicator on hover */
+.sidebar:hover .sidebar-items::-webkit-scrollbar-thumb,
+.library-sidebar:hover .library-content::-webkit-scrollbar-thumb {
+    opacity: 0.6;
+}
+
+/* === SCROLL FADE EFFECTS (OPTIONAL) === */
+/* Add fade effect at top and bottom of scrollable areas */
+.library-content::before {
+    content: '';
+    position: sticky;
+    top: 0;
+    height: 10px;
+    background: linear-gradient(to bottom, var(--sidebar-bg), transparent);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.library-content::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    height: 10px;
+    background: linear-gradient(to top, var(--sidebar-bg), transparent);
+    z-index: 1;
+    pointer-events: none;
+}
