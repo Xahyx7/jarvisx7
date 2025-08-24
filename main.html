@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOVA AI Ultimate v7.2.1 - Foundation Intelligence</title>
+    <title>NOVA AI Ultimate v7.2.1 - Phase 2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Left Sidebar (Fixed) -->
+        <!-- Main Sidebar -->
         <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="nova-logo-sidebar">
+                    <img src="nova-logo.png" alt="Nova Logo" class="nova-logo-sidebar-img" />
+                    <span class="nova-logo-text">NOVA AI</span>
+                </div>
+            </div>
+            
             <div class="sidebar-items">
                 <div class="sidebar-item active" data-mode="chat" title="Chat">
                     <span class="item-icon">💬</span>
@@ -22,6 +29,11 @@
                 <div class="sidebar-item" data-mode="image" title="Image Generation">
                     <span class="item-icon">🎨</span>
                     <span class="item-text">Images</span>
+                </div>
+                <div class="sidebar-item" id="libraryToggle" title="Chat Sessions Library">
+                    <span class="item-icon">📚</span>
+                    <span class="item-text">Library</span>
+                    <span class="expand-icon">›</span>
                 </div>
                 <div class="sidebar-item" data-mode="analytics" title="Analytics">
                     <span class="item-icon">📊</span>
@@ -38,9 +50,36 @@
             </div>
         </div>
 
-        <!-- Main Panel (Flexible Layout) -->
+        <!-- Library Sidebar (Hidden by default, slides from left) -->
+        <div class="library-sidebar" id="librarySidebar">
+            <div class="library-header">
+                <div class="nova-logo-library">
+                    <img src="nova-logo.png" alt="Nova Logo" class="nova-logo-library-img" />
+                    <span class="nova-logo-library-text">NOVA AI</span>
+                </div>
+                <button class="close-library" id="closeLibrary">×</button>
+            </div>
+            
+            <div class="library-actions">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <span class="new-chat-icon">+</span>
+                    <span class="new-chat-text">New Chat</span>
+                </button>
+            </div>
+            
+            <div class="library-content" id="libraryContent">
+                <div class="sessions-list" id="sessionsList">
+                    <!-- Sessions will be dynamically populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay for library sidebar -->
+        <div class="library-overlay" id="libraryOverlay"></div>
+
+        <!-- Main Panel -->
         <div class="main-panel">
-            <!-- Hero Section (Shows when no chat, doesn't scroll with content) -->
+            <!-- Hero Section (Shows when no chat) -->
             <div id="novaHero" class="nova-hero visible">
                 <div class="nova-logo-orb">
                     <img src="nova-logo.png" alt="Nova Logo" class="nova-logo-img" />
@@ -51,12 +90,17 @@
 
             <!-- Scrollable Chat Container -->
             <div class="chat-container">
-                <!-- Chat Messages Area (This is what scrolls) -->
+                <!-- Chat Messages Area -->
                 <div class="chat-area" id="messagesContainer">
                     <!-- Messages will be inserted here dynamically -->
                 </div>
 
-                <!-- Image Loading Shimmer (Hidden by default) -->
+                <!-- Search Results Container (for search mode) -->
+                <div class="search-results" id="searchResults" style="display: none;">
+                    <!-- Search results will appear here -->
+                </div>
+
+                <!-- Image Loading Shimmer -->
                 <div id="imageShimmer" class="image-shimmer" style="display: none;">
                     <div class="shimmer-layer"></div>
                 </div>
@@ -71,7 +115,7 @@
                 </div>
             </div>
 
-            <!-- Input Section (Fixed at Bottom) -->
+            <!-- Input Section -->
             <div class="input-section">
                 <div class="search-container">
                     <form id="messageForm" class="search-form">
@@ -91,17 +135,18 @@
                 </div>
             </div>
 
-            <!-- Image API Selector (Shows only in image mode) -->
+            <!-- Image API Selector -->
             <div id="image-api-selector" class="image-api-selector" style="display: none;">
-                <button class="api-btn active" data-api="pollinations" title="Pollinations API">🎨 Pollinations</button>
-                <button class="api-btn" data-api="huggingface" title="Hugging Face API">🤖 Hugging Face</button>
-                <button class="api-btn" data-api="kroki" title="Kroki Diagrams API">📊 Kroki Diagrams</button>
+                <button class="api-btn active" data-api="pollinations">🎨 Pollinations</button>
+                <button class="api-btn" data-api="huggingface">🤖 Hugging Face</button>
+                <button class="api-btn" data-api="kroki">📊 Kroki Diagrams</button>
             </div>
 
             <!-- Status Bar -->
             <div class="status-bar">
                 <span id="statusText">Ready</span>
                 <button id="clearHistoryBtn">Clear Chat</button>
+                <span id="sessionInfo" class="session-info">Session: Default</span>
                 <span id="apiStatus">🧠 NOVA ready</span>
             </div>
         </div>
